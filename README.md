@@ -31,5 +31,10 @@ See the `examples` directory for usage examples.
 
 To use falcore to serve HTTPS, simply call `ListenAndServeTLS` instead of `ListenAndServe`.  If you want to host SSL and nonSSL out of the same process, simply create two instances of `falcore.Server`.  You can give them the same pipeline or share pipeline components.
 
+## Authors
+
+* [Dave Grijalva](http://www.github.com/dgrijalva)
+* [Scott White](http://www.github.com/smw1218)
+
 
 [gb]: http://code.google.com/p/go-gb/
