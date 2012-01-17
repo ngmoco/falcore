@@ -1,0 +1,8 @@
+*.6
+_*
+6.out
+bin
+examples/hot_restart/hot_restart
+examples/hello_world/hello_world
+examples/basic_file_server/basic_file_server
+
