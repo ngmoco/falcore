@@ -1,9 +1,8 @@
 package falcore
 
 import (
-	"regexp"
 	"container/list"
-	"os"
+	"regexp"
 )
 
 // Interface for defining routers
@@ -89,7 +88,7 @@ func (r *PathRouter) AddRoute(route Route) {
 }
 
 // convenience method for adding RegexpRoutes
-func (r *PathRouter) AddMatch(match string, filter RequestFilter) (err os.Error) {
+func (r *PathRouter) AddMatch(match string, filter RequestFilter) (err error) {
 	route := &RegexpRoute{Filter: filter}
 	if route.Match, err = regexp.Compile(match); err == nil {
 		r.Routes.PushBack(route)

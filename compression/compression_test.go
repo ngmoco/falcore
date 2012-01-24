@@ -1,19 +1,19 @@
 package compression
 
 import (
-	"falcore"
-	"http"
 	"bufio"
-	"testing"
-	"os"
+	"bytes"
+	"compress/flate"
+	"compress/gzip"
+
+	"falcore"
 	"fmt"
-	"path"
 	"io"
 	"io/ioutil"
-	"bytes"
-	"compress/gzip"
-	"compress/flate"
 	"net"
+	"net/http"
+	"path"
+	"testing"
 	"time"
 )
 
@@ -159,7 +159,7 @@ func readfile(path string) []byte {
 	return nil
 }
 
-func get(p string, accept string) (r *http.Response, err os.Error) {
+func get(p string, accept string) (r *http.Response, err error) {
 	var conn net.Conn
 	if conn, err = net.Dial("tcp", fmt.Sprintf("localhost:%v", port())); err == nil {
 		req, _ := http.NewRequest("GET", fmt.Sprintf("http://%v", path.Join(fmt.Sprintf("localhost:%v/", port()), p)), nil)

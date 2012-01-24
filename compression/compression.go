@@ -1,14 +1,14 @@
 package compression
 
 import (
-	"http"
-	"strings"
 	"bytes"
-	"io"
-	"os"
-	"compress/gzip"
 	"compress/flate"
+	"compress/gzip"
 	"falcore"
+
+	"io"
+	"net/http"
+	"strings"
 )
 
 var DefaultTypes = []string{"text/plain", "text/html", "application/json", "text/xml"}
@@ -75,7 +75,7 @@ func (c *Filter) FilterResponse(request *falcore.Request, res *http.Response) {
 
 		// Perform compression
 		r := make([]byte, 1024)
-		var err os.Error
+		var err error
 		var i int
 		for err == nil {
 			i, err = res.Body.Read(r)
@@ -96,11 +96,11 @@ func (c *Filter) FilterResponse(request *falcore.Request, res *http.Response) {
 
 type filteredBody bytes.Buffer
 
-func (b *filteredBody) Read(byt []byte) (int, os.Error) {
+func (b *filteredBody) Read(byt []byte) (int, error) {
 	i, err := (*bytes.Buffer)(b).Read(byt)
 	return i, err
 }
 
-func (b filteredBody) Close() os.Error {
+func (b filteredBody) Close() error {
 	return nil
 }

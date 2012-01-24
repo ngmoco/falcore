@@ -1,9 +1,9 @@
 package falcore
 
 import (
-	"testing"
+	"net/http"
 	"regexp"
-	"http"
+	"testing"
 )
 
 type SimpleFilter int

@@ -1,7 +1,7 @@
 package falcore
 
 import (
-	"http"
+	"net/http"
 )
 
 // Filter incomming requests and optionally return a response or nil.  

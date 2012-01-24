@@ -1,18 +1,19 @@
 package falcore
 
 import (
-	"http"
-	"fmt"
-	"os"
-	"net"
 	"bufio"
-	"time"
-	"io"
 	"crypto/rand"
 	"crypto/tls"
+	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 )
 
 type Server struct {
@@ -37,23 +38,23 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 	return s
 }
 
-func (srv *Server) FdListen(fd int) os.Error {
-	var err os.Error
+func (srv *Server) FdListen(fd int) error {
+	var err error
 	srv.listenerFile = os.NewFile(fd, "")
 	if srv.listener, err = net.FileListener(srv.listenerFile); err != nil {
 		return err
 	}
 	if l, ok := srv.listener.(*net.TCPListener); ok {
-		l.SetTimeout(3e9)
+		l.SetDeadline(time.Now().Add(3e9))
 	} else {
-		return os.NewError("Broken listener isn't TCP")
+		return errors.New("Broken listener isn't TCP")
 	}
 	return nil
 }
 
-func (srv *Server) socketListen() os.Error {
+func (srv *Server) socketListen() error {
 	var la *net.TCPAddr
-	var err os.Error
+	var err error
 	if la, err = net.ResolveTCPAddr("tcp", srv.Addr); err != nil {
 		return err
 	}
@@ -66,14 +67,14 @@ func (srv *Server) socketListen() os.Error {
 	if srv.listenerFile, err = l.File(); err != nil {
 		return err
 	}
-	if e := syscall.SetNonblock(srv.listenerFile.Fd(), true); e != 0 {
-		return os.Errno(e)
+	if e := syscall.SetNonblock(srv.listenerFile.Fd(), true); e != nil {
+		return e
 	}
-	l.SetTimeout(3e9)
+	l.SetDeadline(time.Now().Add(3e9))
 	return nil
 }
 
-func (srv *Server) ListenAndServe() os.Error {
+func (srv *Server) ListenAndServe() error {
 	if srv.Addr == "" {
 		srv.Addr = ":http"
 	}
@@ -89,17 +90,17 @@ func (srv *Server) SocketFd() int {
 	return srv.listenerFile.Fd()
 }
 
-func (srv *Server) ListenAndServeTLS(certFile, keyFile string) os.Error {
+func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	if srv.Addr == "" {
 		srv.Addr = ":https"
 	}
 	config := &tls.Config{
 		Rand:       rand.Reader,
-		Time:       time.Seconds,
+		Time:       time.Now,
 		NextProtos: []string{"http/1.1"},
 	}
 
-	var err os.Error
+	var err error
 	config.Certificates = make([]tls.Certificate, 1)
 	config.Certificates[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
@@ -132,7 +133,7 @@ func (srv *Server) Port() int {
 	return 0
 }
 
-func (srv *Server) serve() (e os.Error) {
+func (srv *Server) serve() (e error) {
 	var accept = true
 	srv.AcceptReady <- 1
 	for accept {
@@ -164,7 +165,7 @@ func (srv *Server) serve() (e os.Error) {
 }
 
 func (srv *Server) handler(c net.Conn) {
-	startTime := time.Nanoseconds()
+	startTime := time.Now()
 	defer srv.connectionFinished(c)
 	buf, err := bufio.NewReaderSize(c, 8192)
 	if err != nil {
@@ -187,7 +188,7 @@ func (srv *Server) handler(c net.Conn) {
 			pssInit := new(PipelineStageStat)
 			pssInit.Name = "server.Init"
 			pssInit.StartTime = startTime
-			pssInit.EndTime = time.Nanoseconds()
+			pssInit.EndTime = time.Now()
 			request.appendPipelineStage(pssInit)
 			// execute the pipeline
 			if res = srv.Pipeline.execute(request); res == nil {
