@@ -1,12 +1,12 @@
 package upstream
 
 import (
-	"http"
-	"os"
-	"net"
-	"fmt"
-	"time"
 	"falcore"
+
+	"fmt"
+	"net"
+	"net/http"
+	"time"
 )
 
 type Upstream struct {
@@ -15,7 +15,7 @@ type Upstream struct {
 	// The port on the upstream host
 	Port int
 	// Default 60 seconds
-	Timeout int64
+	Timeout time.Duration
 	// Will ignore https on the incoming request and always upstream http
 	ForceHttp bool
 
@@ -48,12 +48,12 @@ func NewUpstream(host string, port int, forceHttp bool) *Upstream {
 	u.host = fmt.Sprintf("%v:%v", u.Host, u.Port)
 
 	u.transport = new(http.Transport)
-	u.transport.Dial = func(n, addr string) (c net.Conn, err os.Error) {
+	u.transport.Dial = func(n, addr string) (c net.Conn, err error) {
 		falcore.Debug("Dialing connection to %v", u.tcpaddr)
 		var ctcp *net.TCPConn
 		ctcp, err = net.DialTCP("tcp4", nil, u.tcpaddr)
 		if ctcp != nil {
-			ctcp.SetTimeout(u.Timeout)
+			ctcp.SetDeadline(time.Now().Add(u.Timeout))
 		}
 		if err != nil {
 			falcore.Error("Dial Failed: %v", err)
@@ -70,7 +70,7 @@ func (u *Upstream) SetPoolSize(size int) {
 }
 
 func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) {
-	var err os.Error
+	var err error
 	req := request.HttpRequest
 
 	// Force the upstream to use http 
@@ -78,10 +78,10 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 		req.URL.Scheme = "http"
 		req.URL.Host = req.Host
 	}
-	before := time.Nanoseconds()
+	before := time.Now()
 	req.Header.Set("Connection", "Keep-Alive")
 	res, err = u.transport.RoundTrip(req)
-	diff := falcore.TimeDiff(before, time.Nanoseconds())
+	diff := falcore.TimeDiff(before, time.Now())
 	if err != nil {
 		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
 			falcore.Error("%s Upstream Timeout error: %v", request.ID, err)
@@ -93,6 +93,6 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 			request.CurrentStage.Status = 2 // Fail
 		}
 	}
-	falcore.Debug("%s [%s] [%s%s] s=%d Time=%.4f", request.ID, req.Method, u.host, req.RawURL, res.StatusCode, diff)
+	falcore.Debug("%s [%s] [%s%s] s=%d Time=%.4f", request.ID, req.Method, u.host, req.URL, res.StatusCode, diff)
 	return
 }

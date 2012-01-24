@@ -1,14 +1,14 @@
 package falcore
 
 import (
-	"http"
 	"container/list"
 	"fmt"
-	"time"
-	"rand"
 	"hash"
 	"hash/crc32"
+	"math/rand"
 	"net"
+	"net/http"
+	"time"
 )
 
 // Request wrapper
@@ -38,26 +38,28 @@ import (
 // The Signature is also a cool feature. See the 
 type Request struct {
 	ID                 string
-	StartTime          int64
-	EndTime            int64
+	StartTime          time.Time
+	EndTime            time.Time
 	HttpRequest        *http.Request
 	Connection         net.Conn
 	PipelineStageStats *list.List
 	CurrentStage       *PipelineStageStat
 	pipelineHash       hash.Hash32
-	piplineTot         int64
-	Overhead           int64
+	piplineTot         time.Duration
+	Overhead           time.Duration
 }
 
 // Used internally to create and initialize a new request.
-func newRequest(request *http.Request, conn net.Conn, startTime int64) *Request {
+func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Request {
 	fReq := new(Request)
 	fReq.HttpRequest = request
 	fReq.StartTime = startTime
 	fReq.Connection = conn
 	// create a semi-unique id to track a connection in the logs
-	// the last 3 zeros of time.Nanosecods appear to always be zero		
-	fReq.ID = fmt.Sprintf("%010x", (fReq.StartTime-(fReq.StartTime-(fReq.StartTime%1e12)))+int64(rand.Intn(999)))
+	// ID is the least significant decimal digits of time with some randomization
+	// the last 3 zeros of time.Nanoseconds appear to always be zero		
+	var ut = fReq.StartTime.UnixNano()
+	fReq.ID = fmt.Sprintf("%010x", (ut-(ut-(ut%1e12)))+int64(rand.Intn(999)))
 	fReq.PipelineStageStats = list.New()
 	fReq.pipelineHash = crc32.NewIEEE()
 	return fReq
@@ -71,7 +73,7 @@ func (fReq *Request) startPipelineStage(name string) {
 
 // Finishes the CurrentStage.
 func (fReq *Request) finishPipelineStage() {
-	fReq.CurrentStage.EndTime = time.Nanoseconds()
+	fReq.CurrentStage.EndTime = time.Now()
 	fReq.finishCommon()
 }
 
@@ -86,8 +88,7 @@ func (fReq *Request) appendPipelineStage(pss *PipelineStageStat) {
 func (fReq *Request) finishCommon() {
 	fReq.pipelineHash.Write([]byte(fReq.CurrentStage.Name))
 	fReq.pipelineHash.Write([]byte{fReq.CurrentStage.Status})
-	fReq.piplineTot += fReq.CurrentStage.EndTime - fReq.CurrentStage.StartTime
-
+	fReq.piplineTot += fReq.CurrentStage.EndTime.Sub(fReq.CurrentStage.StartTime)
 }
 
 // The Signature will only be complete in the RequestDoneCallback.  At
@@ -107,7 +108,7 @@ func (fReq *Request) Signature() string {
 func (fReq *Request) Trace() {
 	reqTime := TimeDiff(fReq.StartTime, fReq.EndTime)
 	req := fReq.HttpRequest
-	Trace("%s [%s] %s%s Sig=%s Tot=%.4f", fReq.ID, req.Method, req.Host, req.RawURL, fReq.Signature(), reqTime)
+	Trace("%s [%s] %s%s Sig=%s Tot=%.4f", fReq.ID, req.Method, req.Host, req.URL, fReq.Signature(), reqTime)
 	l := fReq.PipelineStageStats
 	for e := l.Front(); e != nil; e = e.Next() {
 		pss, _ := e.Value.(*PipelineStageStat)
@@ -118,8 +119,8 @@ func (fReq *Request) Trace() {
 }
 
 func (fReq *Request) finishRequest() {
-	fReq.EndTime = time.Nanoseconds()
-	fReq.Overhead = (fReq.EndTime - fReq.StartTime) - fReq.piplineTot
+	fReq.EndTime = time.Now()
+	fReq.Overhead = fReq.EndTime.Sub(fReq.StartTime) - fReq.piplineTot
 }
 
 // Container for keeping stats per pipeline stage 
@@ -139,13 +140,13 @@ func (fReq *Request) finishRequest() {
 type PipelineStageStat struct {
 	Name      string
 	Status    byte
-	StartTime int64
-	EndTime   int64
+	StartTime time.Time
+	EndTime   time.Time
 }
 
 func NewPiplineStage(name string) *PipelineStageStat {
 	pss := new(PipelineStageStat)
 	pss.Name = name
-	pss.StartTime = time.Nanoseconds()
+	pss.StartTime = time.Now()
 	return pss
 }

@@ -1,11 +1,11 @@
 package falcore
 
 import (
-	"strings"
-	"http"
-	"io/ioutil"
-	"os"
 	"io"
+	"io/ioutil"
+	"net/http"
+
+	"strings"
 )
 
 // Keeps the body of a request in a string so it can be re-read at each stage of the pipeline
@@ -35,7 +35,7 @@ func (sbf *StringBodyFilter) FilterRequest(request *Request) *http.Response {
 
 // reads the request body and replaces the buffer with self
 // returns nil if the body is multipart and not replaced
-func ReadRequestBody(r *http.Request) (sb *StringBody, err os.Error) {
+func ReadRequestBody(r *http.Request) (sb *StringBody, err error) {
 	ct := r.Header.Get("Content-Type")
 	// leave it on the buffer if we're multipart
 	if strings.SplitN(ct, ";", 2)[0] != "multipart/form-data" && r.ContentLength > 0 {
@@ -54,11 +54,11 @@ func ReadRequestBody(r *http.Request) (sb *StringBody, err os.Error) {
 	return nil, nil // ignore	
 }
 
-func (sb *StringBody) Read(b []byte) (n int, err os.Error) {
+func (sb *StringBody) Read(b []byte) (n int, err error) {
 	return sb.BodyBuffer.Read(b)
 }
 
-func (sb *StringBody) Close() os.Error {
+func (sb *StringBody) Close() error {
 	// start over
 	sb.BodyBuffer = strings.NewReader(sb.BodyString)
 	return nil

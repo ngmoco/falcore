@@ -1,9 +1,8 @@
 package falcore
 
 import (
-	"http"
+	"net/http"
 	"strings"
-	"os"
 )
 
 func SimpleResponse(req *http.Request, status int, headers http.Header, body string) *http.Response {
@@ -26,10 +25,10 @@ func SimpleResponse(req *http.Request, status int, headers http.Header, body str
 
 type fixedResBody strings.Reader
 
-func (s *fixedResBody) Close() os.Error {
+func (s *fixedResBody) Close() error {
 	return nil
 }
 
-func (s *fixedResBody) Read(b []byte) (int, os.Error) {
+func (s *fixedResBody) Read(b []byte) (int, error) {
 	return (*strings.Reader)(s).Read(b)
 }

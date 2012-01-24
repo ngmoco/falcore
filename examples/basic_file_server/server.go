@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"http"
+	"net/http"
 
 	"falcore"
-	"falcore/static_file"
 	"falcore/compression"
+	"falcore/static_file"
 )
 
 // Command line options

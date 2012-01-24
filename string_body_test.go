@@ -1,10 +1,10 @@
 package falcore
 
 import (
-	"testing"
-	"http"
-	"time"
 	"bytes"
+	"net/http"
+	"testing"
+	"time"
 )
 
 func TestStringBody(t *testing.T) {
@@ -12,7 +12,7 @@ func TestStringBody(t *testing.T) {
 	tmp, _ := http.NewRequest("POST", "/hello", bytes.NewBuffer(expected))
 	tmp.Header.Set("Content-Type", "text/plain")
 	tmp.ContentLength = int64(len(expected))
-	req := newRequest(tmp, nil, time.Nanoseconds())
+	req := newRequest(tmp, nil, time.Now())
 	req.startPipelineStage("StringBodyTest")
 
 	sbf := &StringBodyFilter{}

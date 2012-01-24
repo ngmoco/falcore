@@ -1,8 +1,8 @@
 package etag
 
 import (
-	"http"
 	"falcore"
+	"net/http"
 )
 
 // falcore/etag.Filter is a falcore.ResponseFilter that matches
@@ -16,7 +16,6 @@ import (
 // clients are well behaved.
 // 
 type Filter struct {
-
 }
 
 func (f *Filter) FilterResponse(request *falcore.Request, res *http.Response) {

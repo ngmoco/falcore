@@ -1,13 +1,12 @@
 package upstream
 
 import (
-	"os"
-	"strings"
+	"falcore"
+	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
-	"falcore"
-	"http"
 )
 
 type UpstreamEntryConfig struct {
@@ -20,6 +19,7 @@ type UpstreamEntry struct {
 	Upstream *Upstream
 	Weight   int
 }
+
 // An UpstreamPool is a list of upstream servers which are considered
 // functionally equivalent.  The pool will round-robin the requests to the servers.
 type UpstreamPool struct {
@@ -51,7 +51,7 @@ func NewUpstreamPool(name string, config []UpstreamEntryConfig) *UpstreamPool {
 		upstreamHost := parts[0]
 		upstreamPort := 80
 		if len(parts) > 1 {
-			var err os.Error
+			var err error
 			upstreamPort, err = strconv.Atoi(parts[1])
 			if err != nil {
 				upstreamPort = 80

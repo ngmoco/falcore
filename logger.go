@@ -1,8 +1,9 @@
 package falcore
 
 import (
+	"errors"
 	"log"
-	"os"
+	"time"
 )
 
 // I really want to use log4go... but i need to support falling back to standard (shitty) logger :(
@@ -14,9 +15,9 @@ type Logger interface {
 	Debug(arg0 interface{}, args ...interface{})
 	Trace(arg0 interface{}, args ...interface{})
 	Info(arg0 interface{}, args ...interface{})
-	Warn(arg0 interface{}, args ...interface{}) os.Error
-	Error(arg0 interface{}, args ...interface{}) os.Error
-	Critical(arg0 interface{}, args ...interface{}) os.Error
+	Warn(arg0 interface{}, args ...interface{}) error
+	Error(arg0 interface{}, args ...interface{}) error
+	Critical(arg0 interface{}, args ...interface{}) error
 }
 
 var logger Logger = NewStdLibLogger()
@@ -26,8 +27,8 @@ func SetLogger(newLogger Logger) {
 }
 
 // Helper for calculating times
-func TimeDiff(startTime int64, endTime int64) float32 {
-	return float32(endTime-startTime) / 1.0e9
+func TimeDiff(startTime time.Time, endTime time.Time) float32 {
+	return float32(endTime.Sub(startTime)) / 1.0e9
 }
 
 // Global Logging
@@ -51,15 +52,15 @@ func Info(arg0 interface{}, args ...interface{}) {
 	logger.Info(arg0, args...)
 }
 
-func Warn(arg0 interface{}, args ...interface{}) os.Error {
+func Warn(arg0 interface{}, args ...interface{}) error {
 	return logger.Warn(arg0, args...)
 }
 
-func Error(arg0 interface{}, args ...interface{}) os.Error {
+func Error(arg0 interface{}, args ...interface{}) error {
 	return logger.Error(arg0, args...)
 }
 
-func Critical(arg0 interface{}, args ...interface{}) os.Error {
+func Critical(arg0 interface{}, args ...interface{}) error {
 	return logger.Critical(arg0, args...)
 }
 
@@ -112,26 +113,26 @@ func (fl StdLibLogger) Info(arg0 interface{}, args ...interface{}) {
 	fl.Log(INFO, arg0, args...)
 }
 
-func (fl StdLibLogger) Warn(arg0 interface{}, args ...interface{}) os.Error {
+func (fl StdLibLogger) Warn(arg0 interface{}, args ...interface{}) error {
 	return fl.Log(WARNING, arg0, args...)
 }
 
-func (fl StdLibLogger) Error(arg0 interface{}, args ...interface{}) os.Error {
+func (fl StdLibLogger) Error(arg0 interface{}, args ...interface{}) error {
 	return fl.Log(ERROR, arg0, args...)
 }
 
-func (fl StdLibLogger) Critical(arg0 interface{}, args ...interface{}) os.Error {
+func (fl StdLibLogger) Critical(arg0 interface{}, args ...interface{}) error {
 	return fl.Log(CRITICAL, arg0, args...)
 }
 
-func (fl StdLibLogger) Log(lvl level, arg0 interface{}, args ...interface{}) (e os.Error) {
+func (fl StdLibLogger) Log(lvl level, arg0 interface{}, args ...interface{}) (e error) {
 	defer func() {
 		if x := recover(); x != nil {
 			var ok bool
-			if e, ok = x.(os.Error); ok {
+			if e, ok = x.(error); ok {
 				return
 			}
-			e = os.NewError("Um... barf")
+			e = errors.New("Um... barf")
 		}
 	}()
 	switch first := arg0.(type) {

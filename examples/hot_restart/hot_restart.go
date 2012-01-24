@@ -2,11 +2,11 @@ package main
 
 import (
 	"falcore"
-	"fmt"
-	"http"
 	"flag"
-	"os/signal"
+	"fmt"
+	"net/http"
 	"os"
+	"os/signal"
 	"syscall"
 )
 
@@ -64,7 +64,7 @@ func childReady(srv *falcore.Server) {
 
 // setup and fork/exec myself. Make sure to keep open important FD's that won't get re-created by the child
 // specifically, std* and your listen socket
-func forker(srv *falcore.Server) (pid int, err int) {
+func forker(srv *falcore.Server) (pid int, err error) {
 	fmt.Printf("Forking now with socket: %v\n", srv.SocketFd())
 	mypath := os.Args[0]
 	args := []string{mypath, "-socket", fmt.Sprintf("%v", srv.SocketFd())}
