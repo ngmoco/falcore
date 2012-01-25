@@ -56,7 +56,7 @@ func (p *Pipeline) execute(req *Request) (res *http.Response) {
 			}
 		} else if filter, ok := e.Value.(RequestFilter); ok {
 			t := reflect.TypeOf(filter)
-			req.startPipelineStage(t.String()[1:])
+			req.startPipelineStage(t.String())
 			res = filter.FilterRequest(req)
 			req.finishPipelineStage()
 			if res != nil {
@@ -81,7 +81,7 @@ func (p *Pipeline) down(req *Request, res *http.Response) {
 	for e := p.Downstream.Front(); e != nil; e = e.Next() {
 		if filter, ok := e.Value.(ResponseFilter); ok {
 			t := reflect.TypeOf(filter)
-			req.startPipelineStage(t.String()[1:])
+			req.startPipelineStage(t.String())
 			filter.FilterResponse(req, res)
 			req.finishPipelineStage()
 		} else {
