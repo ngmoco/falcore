@@ -44,9 +44,7 @@ func (srv *Server) FdListen(fd int) error {
 	if srv.listener, err = net.FileListener(srv.listenerFile); err != nil {
 		return err
 	}
-	if l, ok := srv.listener.(*net.TCPListener); ok {
-		l.SetDeadline(time.Now().Add(3e9))
-	} else {
+	if _, ok := srv.listener.(*net.TCPListener); !ok {
 		return errors.New("Broken listener isn't TCP")
 	}
 	return nil
@@ -70,7 +68,6 @@ func (srv *Server) socketListen() error {
 	if e := syscall.SetNonblock(srv.listenerFile.Fd(), true); e != nil {
 		return e
 	}
-	l.SetDeadline(time.Now().Add(3e9))
 	return nil
 }
 
@@ -138,6 +135,9 @@ func (srv *Server) serve() (e error) {
 	srv.AcceptReady <- 1
 	for accept {
 		var c net.Conn
+		if l, ok := srv.listener.(*net.TCPListener); ok {
+			l.SetDeadline(time.Now().Add(3e9))
+		}
 		c, e = srv.listener.Accept()
 		if e != nil {
 			if ope, ok := e.(*net.OpError); ok {
