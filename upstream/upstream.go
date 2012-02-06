@@ -103,14 +103,14 @@ func (u *Upstream) ping() (up bool, ok bool) {
 	if u.PingPath != "" {
 		// the url must be syntactically valid for this to work but the host will be ignored because we
 		// are overriding the connection always
-		request, err := http.NewRequest("GET", "http://localhost" + u.PingPath, nil)
+		request, err := http.NewRequest("GET", "http://localhost"+u.PingPath, nil)
 		request.Header.Set("Connection", "Keep-Alive") // not sure if this should be here for a ping
 		if err != nil {
 			falcore.Error("Bad Ping request: %v", err)
 			return false, true
 		}
 		res, err := u.transport.RoundTrip(request)
-		
+
 		if err != nil {
 			falcore.Error("Failed Ping to %v:%v: %v", u.Host, u.Port, err)
 			return false, true
@@ -122,8 +122,7 @@ func (u *Upstream) ping() (up bool, ok bool) {
 		}
 		falcore.Error("Failed Ping to %v:%v: %v", u.Host, u.Port, res.Status)
 		// bad status
-		return false	, true
+		return false, true
 	}
 	return false, false
 }
-

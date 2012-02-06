@@ -99,7 +99,7 @@ func (up UpstreamPool) FilterRequest(req *falcore.Request) (res *http.Response) 
 		up.updateUpstream(ue, 0)
 		up.LogStatus()
 	}
-	return 
+	return
 }
 
 func (up UpstreamPool) updateUpstream(ue *UpstreamEntry, wgt int) {
@@ -158,7 +158,7 @@ func (up UpstreamPool) pingUpstreams() {
 			}
 		}
 	}
-	falcore.Warn("Stopping ping for %v", up.Name)		
+	falcore.Warn("Stopping ping for %v", up.Name)
 }
 
 func (up UpstreamPool) pingUpstream(ups *UpstreamEntry, index int) {
@@ -174,6 +174,5 @@ func (up UpstreamPool) pingUpstream(ups *UpstreamEntry, index int) {
 			up.updateUpstream(ups, 0)
 		}
 		up.LogStatus()
-	} 
+	}
 }
-

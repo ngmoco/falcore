@@ -20,7 +20,7 @@ func main() {
 
 	// add request done callback stage
 	pipeline.RequestDoneCallback = reqCB
-	
+
 	// create server on port 8000
 	server := falcore.NewServer(8000, pipeline)
 
@@ -33,6 +33,7 @@ func main() {
 
 // Example filter to show timing features
 type delayFilter int
+
 func (f delayFilter) FilterRequest(req *falcore.Request) *http.Response {
 	status := rand.Intn(2) // random status 0 or 1
 	if status == 0 {
@@ -43,12 +44,12 @@ func (f delayFilter) FilterRequest(req *falcore.Request) *http.Response {
 }
 // Example filter that returns a Response
 type helloFilter int
+
 func (f helloFilter) FilterRequest(req *falcore.Request) *http.Response {
 	return falcore.SimpleResponse(req.HttpRequest, 200, nil, "hello world!\n")
 }
 
 var reqCB = falcore.NewRequestFilter(func(req *falcore.Request) *http.Response {
-	req.Trace() 	// Prints detailed stats about the request to the log
+	req.Trace() // Prints detailed stats about the request to the log
 	return nil
 })
-
