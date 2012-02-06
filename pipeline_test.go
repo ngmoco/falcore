@@ -120,8 +120,8 @@ func TestPipelineResponseFilter(t *testing.T) {
 		t.Errorf("Pipeline response code wrong: %v expected %v", response.StatusCode, 200)
 	}
 	req.finishRequest()
-	if req.Signature() != "5A9501E0" {
-		t.Errorf("Signature failed: %v expected %v", req.Signature(), "5A9501E0")
+	if req.Signature() != "F7F5165F" {
+		t.Errorf("Signature failed: %v expected %v", req.Signature(), "F7F5165F")
 	}
 	if req.PipelineStageStats.Len() != stages {
 		t.Errorf("PipelineStageStats incomplete: %v expected %v", req.PipelineStageStats.Len(), stages)
@@ -165,8 +165,8 @@ func TestPipelineStatsChecksum(t *testing.T) {
 		t.Errorf("Pipeline response code wrong: %v expected %v", response.StatusCode, 200)
 	}
 	req.finishRequest()
-	if req.Signature() != "C51960CB" {
-		t.Errorf("Signature failed: %v expected %v", req.Signature(), "C51960CB")
+	if req.Signature() != "CA843113" {
+		t.Errorf("Signature failed: %v expected %v", req.Signature(), "CA843113")
 	}
 	if req.PipelineStageStats.Len() != stages {
 		t.Errorf("PipelineStageStats incomplete: %v expected %v", req.PipelineStageStats.Len(), stages)
