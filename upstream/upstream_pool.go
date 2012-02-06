@@ -1,7 +1,7 @@
 package upstream
 
 import (
-	"falcore"
+	"github.com/ngmoco/falcore"
 	"net/http"
 	"strconv"
 	"strings"

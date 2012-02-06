@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
-	"falcore"
-
+	"github.com/ngmoco/falcore"
 	"io"
 	"net/http"
 	"strings"

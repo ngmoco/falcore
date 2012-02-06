@@ -4,8 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-
-	"falcore"
+	"github.com/ngmoco/falcore"
 )
 
 // Command line options

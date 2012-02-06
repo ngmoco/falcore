@@ -4,10 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-
-	"falcore"
-	"falcore/compression"
-	"falcore/static_file"
+	"github.com/ngmoco/falcore"
+	"github.com/ngmoco/falcore/compression"
+	"github.com/ngmoco/falcore/static_file"
 )
 
 // Command line options

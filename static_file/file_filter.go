@@ -1,7 +1,7 @@
 package static_file
 
 import (
-	"falcore"
+	"github.com/ngmoco/falcore"
 	"mime"
 	"net/http"
 	"os"

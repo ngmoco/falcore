@@ -1,7 +1,7 @@
 package etag
 
 import (
-	"falcore"
+	"github.com/ngmoco/falcore"
 	"net/http"
 )
 
