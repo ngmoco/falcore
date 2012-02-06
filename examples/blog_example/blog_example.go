@@ -1,11 +1,11 @@
 package main
 
 import (
-	"falcore"
-	"http"
 	"fmt"
+	"github.com/ngmoco/falcore"
+	"math/rand"
+	"net/http"
 	"time"
-	"rand"
 )
 
 func main() {
@@ -37,11 +37,12 @@ type delayFilter int
 func (f delayFilter) FilterRequest(req *falcore.Request) *http.Response {
 	status := rand.Intn(2) // random status 0 or 1
 	if status == 0 {
-		time.Sleep(rand.Int63n(100e6)) // random sleep between 0 and 100 ms
+		time.Sleep(time.Duration(rand.Int63n(100e6))) // random sleep between 0 and 100 ms
 	}
 	req.CurrentStage.Status = byte(status) // set the status to produce a unique signature
 	return nil
 }
+
 // Example filter that returns a Response
 type helloFilter int
 
