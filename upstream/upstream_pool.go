@@ -14,6 +14,7 @@ type UpstreamEntryConfig struct {
 	HostPort  string
 	Weight    int
 	ForceHttp bool
+	PingPath  string
 }
 
 type UpstreamEntry struct {
@@ -43,7 +44,7 @@ func NewUpstreamPool(name string, config []UpstreamEntryConfig) *UpstreamPool {
 	up.nextUpstream = make(chan *UpstreamEntry)
 	up.weightMutex = new(sync.RWMutex)
 	up.shutdown = make(chan int)
-	up.pinger = time.NewTicker(1e9) // 1s
+	up.pinger = time.NewTicker(3e9) // 3s
 
 	// create the pool
 	for i, uec := range config {
@@ -59,38 +60,53 @@ func NewUpstreamPool(name string, config []UpstreamEntryConfig) *UpstreamPool {
 			}
 		}
 		ups := NewUpstream(upstreamHost, upstreamPort, uec.ForceHttp)
+		ups.PingPath = uec.PingPath
 		ue := new(UpstreamEntry)
 		ue.Upstream = ups
 		ue.Weight = uec.Weight
 		up.pool[i] = ue
 	}
 	go up.nextServer()
+	go up.pingUpstreams()
 	return up
 }
 
-func (up UpstreamPool) Next() *Upstream {
+func (up UpstreamPool) Next() *UpstreamEntry {
 	// TODO check in case all are down that we timeout
-	return (<-up.nextUpstream).Upstream
+	return <-up.nextUpstream
 }
 
-// do we have > thresh upstreams available
-func (up UpstreamPool) Status(thresh int) bool {
-	sum := 0
-	defer up.weightMutex.RUnlock()
+func (up UpstreamPool) LogStatus() {
+	weightsBuffer := make([]int, len(up.pool))
+	// loop and save the weights so we don't lock for logging
 	up.weightMutex.RLock()
-	for _, ue := range up.pool {
-		sum += ue.Weight
-		if sum > thresh {
-			return true
-		}
+	for i, ue := range up.pool {
+		weightsBuffer[i] = ue.Weight
 	}
-	return false
+	up.weightMutex.RUnlock()
+	// Now do the logging
+	for i, ue := range up.pool {
+		falcore.Info("Upstream %v: %v:%v\t%v", up.Name, ue.Upstream.Host, ue.Upstream.Port, weightsBuffer[i])
+	}
 }
 
-func (up UpstreamPool) FilterRequest(req *falcore.Request) *http.Response {
-	return up.Next().FilterRequest(req)
+func (up UpstreamPool) FilterRequest(req *falcore.Request) (res *http.Response) {
+	ue := up.Next()
+	res = ue.Upstream.FilterRequest(req)
+	if req.CurrentStage.Status == 2 {
+		// this gets set by the upstream for errors
+		// so mark this upstream as down
+		up.updateUpstream(ue, 0)
+		up.LogStatus()
+	}
+	return 
 }
 
+func (up UpstreamPool) updateUpstream(ue *UpstreamEntry, wgt int) {
+	up.weightMutex.Lock()
+	ue.Weight = wgt
+	up.weightMutex.Unlock()
+}
 // This should only be called if the upstream pool is no longer active or this may deadlock
 func (up UpstreamPool) Shutdown() {
 	// ping and nextServer
@@ -122,3 +138,42 @@ func (up UpstreamPool) nextServer() {
 		up.rr_count++
 	}
 }
+
+func (up UpstreamPool) pingUpstreams() {
+	pingable := true
+	for pingable {
+		select {
+		case <-up.shutdown:
+			return
+		case <-up.pinger.C:
+			gotone := false
+			for i, ups := range up.pool {
+				if ups.Upstream.PingPath != "" {
+					go up.pingUpstream(ups, i)
+					gotone = true
+				}
+			}
+			if !gotone {
+				pingable = false
+			}
+		}
+	}
+	falcore.Warn("Stopping ping for %v", up.Name)		
+}
+
+func (up UpstreamPool) pingUpstream(ups *UpstreamEntry, index int) {
+	isUp, ok := ups.Upstream.ping()
+	up.weightMutex.RLock()
+	wgt := ups.Weight
+	up.weightMutex.RUnlock()
+	// change in status
+	if ok && (wgt > 0) != isUp {
+		if isUp {
+			up.updateUpstream(ups, 1)
+		} else {
+			up.updateUpstream(ups, 0)
+		}
+		up.LogStatus()
+	} 
+}
+

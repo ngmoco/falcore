@@ -45,7 +45,7 @@ func (p *Pipeline) execute(req *Request) (res *http.Response) {
 	for e := p.Upstream.Front(); e != nil && res == nil; e = e.Next() {
 		if router, ok := e.Value.(Router); ok {
 			t := reflect.TypeOf(router)
-			req.startPipelineStage(t.String()[1:])
+			req.startPipelineStage(t.String())
 			pipe := router.SelectPipeline(req)
 			req.finishPipelineStage()
 			if pipe != nil {

@@ -18,6 +18,8 @@ type Upstream struct {
 	Timeout int64
 	// Will ignore https on the incoming request and always upstream http
 	ForceHttp bool
+	// Ping URL Path-only for checking upness
+	PingPath string
 
 	transport *http.Transport
 	host      string
@@ -49,7 +51,7 @@ func NewUpstream(host string, port int, forceHttp bool) *Upstream {
 
 	u.transport = new(http.Transport)
 	u.transport.Dial = func(n, addr string) (c net.Conn, err os.Error) {
-		falcore.Debug("Dialing connection to %v", u.tcpaddr)
+		falcore.Fine("Dialing connection to %v", u.tcpaddr)
 		var ctcp *net.TCPConn
 		ctcp, err = net.DialTCP("tcp4", nil, u.tcpaddr)
 		if ctcp != nil {
@@ -96,3 +98,32 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	falcore.Debug("%s [%s] [%s%s] s=%d Time=%.4f", request.ID, req.Method, u.host, req.RawURL, res.StatusCode, diff)
 	return
 }
+
+func (u *Upstream) ping() (up bool, ok bool) {
+	if u.PingPath != "" {
+		// the url must be syntactically valid for this to work but the host will be ignored because we
+		// are overriding the connection always
+		request, err := http.NewRequest("GET", "http://localhost" + u.PingPath, nil)
+		request.Header.Set("Connection", "Keep-Alive") // not sure if this should be here for a ping
+		if err != nil {
+			falcore.Error("Bad Ping request: %v", err)
+			return false, true
+		}
+		res, err := u.transport.RoundTrip(request)
+		
+		if err != nil {
+			falcore.Error("Failed Ping to %v:%v: %v", u.Host, u.Port, err)
+			return false, true
+		} else {
+			res.Body.Close()
+		}
+		if res.StatusCode == 200 {
+			return true, true
+		}
+		falcore.Error("Failed Ping to %v:%v: %v", u.Host, u.Port, res.Status)
+		// bad status
+		return false	, true
+	}
+	return false, false
+}
+
