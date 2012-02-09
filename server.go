@@ -167,11 +167,8 @@ func (srv *Server) serve() (e error) {
 func (srv *Server) handler(c net.Conn) {
 	startTime := time.Now()
 	defer srv.connectionFinished(c)
-	buf, err := bufio.NewReaderSize(c, 8192)
-	if err != nil {
-		Error("%s Read buffer fail: %v", srv.serverLogPrefix(), err)
-		return
-	}
+	buf := bufio.NewReaderSize(c, 8192)
+	var err error
 	var req *http.Request
 	// no keepalive (for now)
 	reqCount := 0
