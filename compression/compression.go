@@ -11,7 +11,7 @@ import (
 	"falcore"
 )
 
-var DefaultTypes = []string{"text/plain", "test/html", "application/json", "text/xml"}
+var DefaultTypes = []string{"text/plain", "text/html", "application/json", "text/xml"}
 
 type Filter struct {
 	types []string
