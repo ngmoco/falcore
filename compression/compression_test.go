@@ -5,8 +5,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
-
-	"falcore"
+	"github.com/ngmoco/falcore"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -142,7 +141,10 @@ func compress_gzip(body []byte) []byte {
 
 func compress_deflate(body []byte) []byte {
 	buf := new(bytes.Buffer)
-	comp := flate.NewWriter(buf, -1)
+	comp, err := flate.NewWriter(buf, -1)
+	if err != nil {
+		panic(fmt.Sprintf("Error using compress/flate.NewWriter() %v", err))
+	}
 	comp.Write(body)
 	comp.Close()
 	b := buf.Bytes()

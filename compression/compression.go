@@ -66,7 +66,13 @@ func (c *Filter) FilterResponse(request *falcore.Request, res *http.Response) {
 		case "gzip":
 			compressor = gzip.NewWriter(buf)
 		case "deflate":
-			compressor = flate.NewWriter(buf, -1)
+			comp, err := flate.NewWriter(buf, -1)
+			if err != nil {
+				falcore.Error("Compression Error: %v", err)
+				request.CurrentStage.Status = 1 // Skip
+				return
+			}
+			compressor = comp
 		default:
 			request.CurrentStage.Status = 1 // Skip
 			return
