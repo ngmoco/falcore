@@ -40,7 +40,7 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 
 func (srv *Server) FdListen(fd int) error {
 	var err error
-	srv.listenerFile = os.NewFile(fd, "")
+	srv.listenerFile = os.NewFile(uintptr(fd), "")
 	if srv.listener, err = net.FileListener(srv.listenerFile); err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (srv *Server) socketListen() error {
 	if srv.listenerFile, err = l.File(); err != nil {
 		return err
 	}
-	if e := syscall.SetNonblock(srv.listenerFile.Fd(), true); e != nil {
+	if e := syscall.SetNonblock(int(srv.listenerFile.Fd()), true); e != nil {
 		return e
 	}
 	return nil
@@ -84,7 +84,7 @@ func (srv *Server) ListenAndServe() error {
 }
 
 func (srv *Server) SocketFd() int {
-	return srv.listenerFile.Fd()
+	return int(srv.listenerFile.Fd())
 }
 
 func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
