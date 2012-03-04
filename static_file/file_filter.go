@@ -55,6 +55,8 @@ func (f *Filter) FilterRequest(req *falcore.Request) (res *http.Response) {
 				Request:       req.HttpRequest,
 				StatusCode:    200,
 				Proto:         "HTTP/1.1",
+				ProtoMajor:    1,
+				ProtoMinor:    1,
 				Body:          file,
 				Header:        make(http.Header),
 				ContentLength: fileSize,
@@ -70,6 +72,5 @@ func (f *Filter) FilterRequest(req *falcore.Request) (res *http.Response) {
 		falcore.Debug("Can't open %v: %v", asset_path, err)
 		res = falcore.SimpleResponse(req.HttpRequest, 404, nil, "File not found\n")
 	}
-
 	return
 }
