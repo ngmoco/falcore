@@ -64,7 +64,7 @@ func (c *Filter) FilterResponse(request *falcore.Request, res *http.Response) {
 		var buf = bytes.NewBuffer(make([]byte, 0, 1024))
 		switch mode {
 		case "gzip":
-			compressor, _ = gzip.NewWriter(buf)
+			compressor = gzip.NewWriter(buf)
 		case "deflate":
 			compressor = flate.NewWriter(buf, -1)
 		default:

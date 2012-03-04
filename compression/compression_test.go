@@ -132,7 +132,7 @@ var testData = []struct {
 
 func compress_gzip(body []byte) []byte {
 	buf := new(bytes.Buffer)
-	comp, _ := gzip.NewWriter(buf)
+	comp := gzip.NewWriter(buf)
 	comp.Write(body)
 	comp.Close()
 	b := buf.Bytes()
