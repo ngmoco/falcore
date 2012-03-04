@@ -2,8 +2,7 @@ package static_file
 
 import (
 	"bytes"
-	"falcore"
-
+	"github.com/ngmoco/falcore"
 	"fmt"
 	"io"
 	"io/ioutil"
