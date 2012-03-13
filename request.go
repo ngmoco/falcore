@@ -42,6 +42,7 @@ type Request struct {
 	EndTime            int64
 	HttpRequest        *http.Request
 	Connection         net.Conn
+	RemoteAddr         *net.TCPAddr
 	PipelineStageStats *list.List
 	CurrentStage       *PipelineStageStat
 	pipelineHash       hash.Hash32
@@ -55,6 +56,7 @@ func newRequest(request *http.Request, conn net.Conn, startTime int64) *Request 
 	fReq.HttpRequest = request
 	fReq.StartTime = startTime
 	fReq.Connection = conn
+	fReq.RemoteAddr = conn.RemoteAddr().(*net.TCPAddr)
 	// create a semi-unique id to track a connection in the logs
 	// the last 3 zeros of time.Nanosecods appear to always be zero		
 	fReq.ID = fmt.Sprintf("%010x", (fReq.StartTime-(fReq.StartTime-(fReq.StartTime%1e12)))+int64(rand.Intn(999)))
