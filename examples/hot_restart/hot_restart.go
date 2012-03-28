@@ -69,7 +69,7 @@ func forker(srv *falcore.Server) (pid int, err error) {
 	mypath := os.Args[0]
 	args := []string{mypath, "-socket", fmt.Sprintf("%v", srv.SocketFd())}
 	attr := new(syscall.ProcAttr)
-	attr.Files = append([]int(nil), 0, 1, 2, srv.SocketFd())
+	attr.Files = append([]uintptr(nil), 0, 1, 2, uintptr(srv.SocketFd()))
 	pid, err = syscall.ForkExec(mypath, args, attr)
 	return
 }
@@ -77,11 +77,13 @@ func forker(srv *falcore.Server) (pid int, err error) {
 // Handle lifecycle events
 func handleSignals(srv *falcore.Server) {
 	var sig os.Signal
+	var sigChan = make(chan os.Signal)
+	signal.Notify(sigChan, syscall.SIGHUP, syscall.SIGUSR1, syscall.SIGINT, syscall.SIGTERM, syscall.SIGTSTP)
 	pid := syscall.Getpid()
 	for {
-		sig = <-signal.Incoming
-		if usig, ok := sig.(os.UnixSignal); ok {
-			switch usig {
+		sig = <-sigChan
+/*		if usig, ok := sig.(os.UnixSignal); ok {*/
+			switch sig {
 			case syscall.SIGHUP:
 				// send this to the paraent process to initiate the restart
 				fmt.Println(pid, "Received SIGHUP.  forking.")
@@ -103,6 +105,6 @@ func handleSignals(srv *falcore.Server) {
 			default:
 				fmt.Println(pid, "Received", sig, ": ignoring")
 			}
-		}
+/*		}*/
 	}
 }
