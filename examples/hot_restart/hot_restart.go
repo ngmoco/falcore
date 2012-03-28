@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/ngmoco/falcore"
 	"flag"
 	"fmt"
+	"github.com/ngmoco/falcore"
 	"net/http"
 	"os"
 	"os/signal"
@@ -82,29 +82,27 @@ func handleSignals(srv *falcore.Server) {
 	pid := syscall.Getpid()
 	for {
 		sig = <-sigChan
-/*		if usig, ok := sig.(os.UnixSignal); ok {*/
-			switch sig {
-			case syscall.SIGHUP:
-				// send this to the paraent process to initiate the restart
-				fmt.Println(pid, "Received SIGHUP.  forking.")
-				cpid, err := forker(srv)
-				fmt.Println(pid, "Forked pid:", cpid, "errno:", err)
-			case syscall.SIGUSR1:
-				// child sends this back to the parent when it's ready to Accept
-				fmt.Println(pid, "Received SIGUSR1.  Stopping accept.")
-				srv.StopAccepting()
-			case syscall.SIGINT:
-				fmt.Println(pid, "Received SIGINT.  Shutting down.")
-				os.Exit(0)
-			case syscall.SIGTERM:
-				fmt.Println(pid, "Received SIGTERM.  Terminating.")
-				os.Exit(0)
-			case syscall.SIGTSTP:
-				fmt.Println(pid, "Received SIGTSTP.  Stopping.")
-				syscall.Kill(pid, syscall.SIGSTOP)
-			default:
-				fmt.Println(pid, "Received", sig, ": ignoring")
-			}
-/*		}*/
+		switch sig {
+		case syscall.SIGHUP:
+			// send this to the paraent process to initiate the restart
+			fmt.Println(pid, "Received SIGHUP.  forking.")
+			cpid, err := forker(srv)
+			fmt.Println(pid, "Forked pid:", cpid, "errno:", err)
+		case syscall.SIGUSR1:
+			// child sends this back to the parent when it's ready to Accept
+			fmt.Println(pid, "Received SIGUSR1.  Stopping accept.")
+			srv.StopAccepting()
+		case syscall.SIGINT:
+			fmt.Println(pid, "Received SIGINT.  Shutting down.")
+			os.Exit(0)
+		case syscall.SIGTERM:
+			fmt.Println(pid, "Received SIGTERM.  Terminating.")
+			os.Exit(0)
+		case syscall.SIGTSTP:
+			fmt.Println(pid, "Received SIGTSTP.  Stopping.")
+			syscall.Kill(pid, syscall.SIGSTOP)
+		default:
+			fmt.Println(pid, "Received", sig, ": ignoring")
+		}
 	}
 }

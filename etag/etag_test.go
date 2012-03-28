@@ -3,8 +3,8 @@ package etag
 import (
 	"bufio"
 	"bytes"
-	"github.com/ngmoco/falcore"
 	"fmt"
+	"github.com/ngmoco/falcore"
 	"io"
 	"net"
 	"net/http"

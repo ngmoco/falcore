@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"github.com/ngmoco/falcore"
+	"net/http"
 )
 
 // Command line options

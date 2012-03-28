@@ -107,6 +107,7 @@ func (up UpstreamPool) updateUpstream(ue *UpstreamEntry, wgt int) {
 	ue.Weight = wgt
 	up.weightMutex.Unlock()
 }
+
 // This should only be called if the upstream pool is no longer active or this may deadlock
 func (up UpstreamPool) Shutdown() {
 	// ping and nextServer

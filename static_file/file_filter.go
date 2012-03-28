@@ -42,7 +42,7 @@ func (f *Filter) FilterRequest(req *falcore.Request) (res *http.Response) {
 	// Open File
 	if file, err := os.Open(asset_path); err == nil {
 		// Make sure it's an actual file
-		if stat, err := file.Stat(); err == nil && stat.Mode() & os.ModeType == 0 {
+		if stat, err := file.Stat(); err == nil && stat.Mode()&os.ModeType == 0 {
 			res = &http.Response{
 				Request:       req.HttpRequest,
 				StatusCode:    200,

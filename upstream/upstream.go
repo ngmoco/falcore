@@ -1,8 +1,8 @@
 package upstream
 
 import (
-	"github.com/ngmoco/falcore"
 	"fmt"
+	"github.com/ngmoco/falcore"
 	"net"
 	"net/http"
 	"time"
