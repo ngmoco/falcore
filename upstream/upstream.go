@@ -100,7 +100,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 			request.CurrentStage.Status = 2 // Fail
 		}
 	}
-	falcore.Debug("%s [%s] [%s%s] s=%d Time=%.4f", request.ID, req.Method, u.host, req.URL, res.StatusCode, diff)
+	falcore.Debug("%s [%s] [%s] %s s=%d Time=%.4f", request.ID, req.Method, u.host, req.URL, res.StatusCode, diff)
 	return
 }
 
