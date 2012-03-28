@@ -19,9 +19,9 @@ Falcore is a filter pipeline based HTTP server library.  You can build arbitrari
 
 ## Building
 
-Falcore currently depends on [gb][] to build.  Falcore can be installed with `gb -i` or submoduled into a project.  It is not currently compatible with goinstall.
+Falcore is currently targeted at Go 1.0
 
-Falcore is currently targeted at Go release r.60.3.
+Check out the project into $GOROOT/src/pkg/github.com/ngmoco/falcore.  Build using the `go build` command.
 
 ## Usage
 
@@ -31,10 +31,13 @@ See the `examples` directory for usage examples.
 
 To use falcore to serve HTTPS, simply call `ListenAndServeTLS` instead of `ListenAndServe`.  If you want to host SSL and nonSSL out of the same process, simply create two instances of `falcore.Server`.  You can give them the same pipeline or share pipeline components.
 
-## Authors
+## Maintainers
 
 * [Dave Grijalva](http://www.github.com/dgrijalva)
 * [Scott White](http://www.github.com/smw1218)
 
+## Contributors
+
+* [Graham Anderson](http://www.github.com/gnanderson)
 
 [gb]: http://code.google.com/p/go-gb/
