@@ -23,6 +23,7 @@ type Upstream struct {
 	transport *http.Transport
 	host      string
 	tcpaddr   *net.TCPAddr
+	tcpconn   *net.TCPConn
 }
 
 func NewUpstream(host string, port int, forceHttp bool) *Upstream {
@@ -55,7 +56,8 @@ func NewUpstream(host string, port int, forceHttp bool) *Upstream {
 		var ctcp *net.TCPConn
 		ctcp, err = net.DialTCP("tcp4", nil, u.tcpaddr)
 		if ctcp != nil {
-			ctcp.SetDeadline(time.Now().Add(u.Timeout))
+			u.tcpconn = ctcp
+			u.tcpconn.SetDeadline(time.Now().Add(u.Timeout))
 		}
 		if err != nil {
 			falcore.Error("Dial Failed: %v", err)
@@ -82,6 +84,9 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	}
 	before := time.Now()
 	req.Header.Set("Connection", "Keep-Alive")
+	if u.tcpconn != nil {
+		u.tcpconn.SetDeadline(time.Now().Add(u.Timeout))
+	}
 	res, err = u.transport.RoundTrip(req)
 	diff := falcore.TimeDiff(before, time.Now())
 	if err != nil {
@@ -108,6 +113,9 @@ func (u *Upstream) ping() (up bool, ok bool) {
 		if err != nil {
 			falcore.Error("Bad Ping request: %v", err)
 			return false, true
+		}
+		if u.tcpconn != nil {
+			u.tcpconn.SetDeadline(time.Now().Add(u.Timeout))
 		}
 		res, err := u.transport.RoundTrip(request)
 
