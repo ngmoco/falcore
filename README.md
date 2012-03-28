@@ -19,7 +19,7 @@ Falcore is a filter pipeline based HTTP server library.  You can build arbitrari
 
 ## Building
 
-Falcore is currently targeted at Go 1.0
+Falcore is currently targeted at Go 1.0.  If you're still using Go r.60.x, you can get the last working version of falcore for r.60 using the tag `last_r60`.
 
 Check out the project into $GOROOT/src/pkg/github.com/ngmoco/falcore.  Build using the `go build` command.
 
