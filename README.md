@@ -1,6 +1,8 @@
 # Falcore
 
-A framework for constructing high performance, modular HTTP servers in Go.  [Read more on our blog &raquo;](http://ngenuity.ngmoco.com/2012/01/introducing-falcore-and-timber.html)
+Falcore is a framework for constructing high performance, modular HTTP servers in Golang.
+
+[Read more on our blog &raquo;](http://ngenuity.ngmoco.com/2012/01/introducing-falcore-and-timber.html)
 
 ## Features
 * Modular and flexible design
