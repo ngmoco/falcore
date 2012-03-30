@@ -14,6 +14,9 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	
+	"reflect"
+	"runtime"
 )
 
 type Server struct {
@@ -62,14 +65,37 @@ func (srv *Server) socketListen() error {
 		return err
 	}
 	srv.listener = l
-	if srv.listenerFile, err = l.File(); err != nil {
-		return err
-	}
-	if e := syscall.SetNonblock(int(srv.listenerFile.Fd()), true); e != nil {
-		return e
+	// setup listener to be non-blocking if we're not on windows.
+	// this is required for hot restart to work.
+	if runtime.GOOS != "windows" {
+		if srv.listenerFile, err = l.File(); err != nil {
+			return err
+		}
+		if e := setupFDNonblock(int(srv.listenerFile.Fd())); e != nil {
+			return e
+		}
 	}
 	return nil
 }
+
+// Calling syscall.SetNonblock using reflection to avoid compile errors
+// on windows.  This call is not used on windows as hot restart is not supported.
+func setupFDNonblock(fd int) error {
+	// if function exists
+	if fun := reflect.ValueOf(syscall.SetNonblock); fun.Kind() == reflect.Func {
+		// if first argument is an int
+		if fun.Type().In(0).Kind() == reflect.Int {
+			args := []reflect.Value{reflect.ValueOf(fd), reflect.ValueOf(true)}
+			if res := fun.Call(args); len(res) == 1 && !res[0].IsNil() {
+				err := res[0].Interface().(error)
+				return err
+			}
+		}
+	}
+	
+	return nil
+}
+
 
 func (srv *Server) ListenAndServe() error {
 	if srv.Addr == "" {
