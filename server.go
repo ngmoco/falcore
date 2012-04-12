@@ -71,7 +71,11 @@ func (srv *Server) socketListen() error {
 		if srv.listenerFile, err = l.File(); err != nil {
 			return err
 		}
-		if e := setupFDNonblock(int(srv.listenerFile.Fd())); e != nil {
+		fd := int(srv.listenerFile.Fd())
+		if e := setupFDNonblock(fd); e != nil {
+			return e
+		}
+		if e := syscall.SetsockoptInt(fd, syscall.SOL_TCP , syscall.TCP_NODELAY , 1); e != nil {
 			return e
 		}
 	}
