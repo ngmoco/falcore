@@ -4,6 +4,8 @@ Falcore is a framework for constructing high performance, modular HTTP servers i
 
 [Read more on our blog &raquo;](http://ngenuity.ngmoco.com/2012/01/introducing-falcore-and-timber.html)
 
+[GoPkgDoc](http://gopkgdoc.appspot.com/pkg/github.com/ngmoco/falcore) hosts code documentation for this project.
+
 ## Features
 * Modular and flexible design
 * Hot restart hooks for zero-downtime deploys
