@@ -28,6 +28,7 @@ type Server struct {
 	handlerWaitGroup *sync.WaitGroup
 	logPrefix        string
 	AcceptReady      chan int
+	bufferPool       *bufferPool
 }
 
 func NewServer(port int, pipeline *Pipeline) *Server {
@@ -38,6 +39,7 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 	s.AcceptReady = make(chan int, 1)
 	s.handlerWaitGroup = new(sync.WaitGroup)
 	s.logPrefix = fmt.Sprintf("%d", syscall.Getpid())
+	s.bufferPool = newBufferPool(100, 8192)
 	return s
 }
 
@@ -193,14 +195,15 @@ func (srv *Server) serve() (e error) {
 func (srv *Server) handler(c net.Conn) {
 	startTime := time.Now()
 	defer srv.connectionFinished(c)
-	buf := bufio.NewReaderSize(c, 8192)
+	bpe := srv.bufferPool.take(c)
+	defer srv.bufferPool.give(bpe)
 	var err error
 	var req *http.Request
 	// no keepalive (for now)
 	reqCount := 0
 	keepAlive := true
 	for err == nil && keepAlive {
-		if req, err = http.ReadRequest(buf); err == nil {
+		if req, err = http.ReadRequest(bpe.buf); err == nil {
 			if req.Header.Get("Connection") != "Keep-Alive" {
 				keepAlive = false
 			}
