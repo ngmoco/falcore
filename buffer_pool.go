@@ -50,7 +50,8 @@ func (p *bufferPool) take(r io.Reader)(bpe *bufferPoolEntry) {
 			bpe.source = r
 		default:
 			// none available.  create a new one
-			bpe = &bufferPoolEntry{bufio.NewReaderSize(r, p.bufSize), r}
+			bpe = &bufferPoolEntry{nil, r}
+			bpe.buf = bufio.NewReaderSize(bpe, p.bufSize)
 	}
 	return
 }
