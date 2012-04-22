@@ -1,8 +1,8 @@
 package falcore
 
 import (
-	"io"
 	"bufio"
+	"io"
 )
 
 // uses a chan as a leaky bucket buffer pool
@@ -19,7 +19,7 @@ type bufferPool struct {
 // for the underlying io.Reader to be changed out
 // inside a bufio.Reader.  This is required for reuse.
 type bufferPoolEntry struct {
-	buf *bufio.Reader
+	buf    *bufio.Reader
 	source io.Reader
 }
 
@@ -31,27 +31,27 @@ func (bpe *bufferPoolEntry) Read(p []byte) (n int, err error) {
 func newBufferPool(poolSize, bufferSize int) *bufferPool {
 	return &bufferPool{
 		bufSize: bufferSize,
-		pool: make(chan *bufferPoolEntry, poolSize),
-		drain: make([]byte, bufferSize),
+		pool:    make(chan *bufferPoolEntry, poolSize),
+		drain:   make([]byte, bufferSize),
 	}
 }
 
 // Take a buffer from the pool and set 
 // it up to read from r
-func (p *bufferPool) take(r io.Reader)(bpe *bufferPoolEntry) {
+func (p *bufferPool) take(r io.Reader) (bpe *bufferPoolEntry) {
 	select {
-		case bpe = <- p.pool:
-			// prepare for reuse
-			if a := bpe.buf.Buffered(); a > 0 {
-				// drain the internal buffer
-				bpe.buf.Read(p.drain[0:a])
-			}
-			// swap out the underlying reader
-			bpe.source = r
-		default:
-			// none available.  create a new one
-			bpe = &bufferPoolEntry{nil, r}
-			bpe.buf = bufio.NewReaderSize(bpe, p.bufSize)
+	case bpe = <-p.pool:
+		// prepare for reuse
+		if a := bpe.buf.Buffered(); a > 0 {
+			// drain the internal buffer
+			bpe.buf.Read(p.drain[0:a])
+		}
+		// swap out the underlying reader
+		bpe.source = r
+	default:
+		// none available.  create a new one
+		bpe = &bufferPoolEntry{nil, r}
+		bpe.buf = bufio.NewReaderSize(bpe, p.bufSize)
 	}
 	return
 }
@@ -59,8 +59,7 @@ func (p *bufferPool) take(r io.Reader)(bpe *bufferPoolEntry) {
 // Return a buffer to the pool
 func (p *bufferPool) give(bpe *bufferPoolEntry) {
 	select {
-		case p.pool <- bpe: // return to pool
-		default: // discard
+	case p.pool <- bpe: // return to pool
+	default: // discard
 	}
 }
-

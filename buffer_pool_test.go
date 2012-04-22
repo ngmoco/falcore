@@ -1,16 +1,16 @@
 package falcore
 
 import (
-/*	"io"*/
+	/*	"io"*/
 	"bytes"
 	"testing"
 )
 
-func TestBufferPool(t *testing.T){
+func TestBufferPool(t *testing.T) {
 	pool := newBufferPool(10, 1024)
-	
+
 	text := []byte("Hello World")
-	
+
 	// get one
 	bpe := pool.take(bytes.NewBuffer(text))
 	// read all
@@ -23,8 +23,7 @@ func TestBufferPool(t *testing.T){
 		t.Errorf("Expected length %v got %v", len(text), l)
 	}
 	pool.give(bpe)
-	
-	
+
 	// get one
 	bpe = pool.take(bytes.NewBuffer(text))
 	// read all
@@ -58,5 +57,4 @@ func TestBufferPool(t *testing.T){
 	}
 	pool.give(bpe)
 
-	
 }
