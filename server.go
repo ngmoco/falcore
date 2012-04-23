@@ -203,7 +203,7 @@ func (srv *Server) handler(c net.Conn) {
 	reqCount := 0
 	keepAlive := true
 	for err == nil && keepAlive {
-		if req, err = http.ReadRequest(bpe.buf); err == nil {
+		if req, err = http.ReadRequest(bpe.br); err == nil {
 			if req.Header.Get("Connection") != "Keep-Alive" {
 				keepAlive = false
 			}
