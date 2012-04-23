@@ -18,7 +18,7 @@ type bufferPool struct {
 // for the underlying io.Reader to be changed out
 // inside a bufio.Reader.  This is required for reuse.
 type bufferPoolEntry struct {
-	br    *bufio.Reader
+	br     *bufio.Reader
 	source io.Reader
 }
 
