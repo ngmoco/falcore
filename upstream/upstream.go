@@ -86,8 +86,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 		req.URL.Host = req.Host
 	}
 	if u.RewriteHost {
-		req.URL.Host = u.Host
-		req.URL.Port = u.Port
+		req.URL.Host = fmt.Sprintf("%v:%v", u.Host, u.Port)
 	}
 	before := time.Now()
 	req.Header.Set("Connection", "Keep-Alive")
