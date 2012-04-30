@@ -19,6 +19,8 @@ type Upstream struct {
 	ForceHttp bool
 	// Ping URL Path-only for checking upness
 	PingPath string
+	// Rewrite the Host in the request
+	RewriteHost bool
 
 	transport *http.Transport
 	host      string
@@ -26,11 +28,12 @@ type Upstream struct {
 	tcpconn   *net.TCPConn
 }
 
-func NewUpstream(host string, port int, forceHttp bool) *Upstream {
+func NewUpstream(host string, port int, forceHttp bool, rewriteHost bool) *Upstream {
 	u := new(Upstream)
 	u.Host = host
 	u.Port = port
 	u.ForceHttp = forceHttp
+	u.RewriteHost = rewriteHost
 	ips, err := net.LookupIP(host)
 	var ip net.IP = nil
 	for i := range ips {
@@ -81,6 +84,10 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	if u.ForceHttp || req.URL.Scheme == "" {
 		req.URL.Scheme = "http"
 		req.URL.Host = req.Host
+	}
+	if u.RewriteHost {
+		req.URL.Host = u.Host
+		req.URL.Port = u.Port
 	}
 	before := time.Now()
 	req.Header.Set("Connection", "Keep-Alive")
