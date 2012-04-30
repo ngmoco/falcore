@@ -46,11 +46,13 @@ func NewUpstream(host string, port int, forceHttp bool, rewriteHost bool) *Upstr
 		u.tcpaddr = new(net.TCPAddr)
 		u.tcpaddr.Port = port
 		u.tcpaddr.IP = ip
+		falcore.Debug("Found %v: %v", host, port)
 	} else {
 		falcore.Warn("Can't get IP addr for %v: %v", host, err)
 	}
 	u.Timeout = 60e9
 	u.host = fmt.Sprintf("%v:%v", u.Host, u.Port)
+	falcore.Debug("Upstream Host %v: %v", host, port)
 
 	u.transport = new(http.Transport)
 
