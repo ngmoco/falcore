@@ -10,10 +10,11 @@ import (
 )
 
 type UpstreamEntryConfig struct {
-	HostPort  string
-	Weight    int
-	ForceHttp bool
-	PingPath  string
+	HostPort    string
+	Weight      int
+	ForceHttp   bool
+	PingPath    string
+	RewriteHost bool
 }
 
 type UpstreamEntry struct {
@@ -59,7 +60,7 @@ func NewUpstreamPool(name string, config []UpstreamEntryConfig) *UpstreamPool {
 				falcore.Error("UpstreamPool Error converting port to int for", upstreamHost, ":", err)
 			}
 		}
-		ups := NewUpstream(upstreamHost, upstreamPort, uec.ForceHttp)
+		ups := NewUpstream(upstreamHost, upstreamPort, uec.ForceHttp, uec.RewriteHost)
 		ups.PingPath = uec.PingPath
 		ue := new(UpstreamEntry)
 		ue.Upstream = ups
