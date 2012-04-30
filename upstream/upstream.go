@@ -87,7 +87,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	}
 	if u.RewriteHost {
 		req.URL.Host = fmt.Sprintf("%v:%v", u.Host, u.Port)
-		req.HttpRequest.Host = fmt.Sprintf("%v:%v", u.Host, u.Port)
+		req.Host = fmt.Sprintf("%v:%v", u.Host, u.Port)
 		falcore.Debug("Host rewritten to %v:%v", u.Host, u.Port)
 	}
 	before := time.Now()
