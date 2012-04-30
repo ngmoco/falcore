@@ -88,7 +88,6 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	if u.RewriteHost {
 		req.URL.Host = fmt.Sprintf("%v:%v", u.Host, u.Port)
 		req.Host = fmt.Sprintf("%v:%v", u.Host, u.Port)
-		falcore.Debug("Host rewritten to %v:%v", u.Host, u.Port)
 	}
 	before := time.Now()
 	req.Header.Set("Connection", "Keep-Alive")
@@ -116,7 +115,11 @@ func (u *Upstream) ping() (up bool, ok bool) {
 	if u.PingPath != "" {
 		// the url must be syntactically valid for this to work but the host will be ignored because we
 		// are overriding the connection always
-		request, err := http.NewRequest("GET", "http://localhost"+u.PingPath, nil)
+		host := "http://localhost"
+		if u.RewriteHost {
+			host = fmt.Sprintf("http://%v:%v", u.Host, u.Port)
+		}
+		request, err := http.NewRequest("GET", host+u.PingPath, nil)
 		request.Header.Set("Connection", "Keep-Alive") // not sure if this should be here for a ping
 		if err != nil {
 			falcore.Error("Bad Ping request: %v", err)
