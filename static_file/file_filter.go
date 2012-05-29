@@ -58,11 +58,9 @@ func (f *Filter) FilterRequest(req *falcore.Request) (res *http.Response) {
 			}
 		} else {
 			file.Close()
-			return falcore.SimpleResponse(req.HttpRequest, 404, nil, "File not found\n")
 		}
 	} else {
-		falcore.Debug("Can't open %v: %v", asset_path, err)
-		res = falcore.SimpleResponse(req.HttpRequest, 404, nil, "File not found\n")
+		falcore.Finest("Can't open %v: %v", asset_path, err)
 	}
 	return
 }
