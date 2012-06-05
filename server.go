@@ -142,7 +142,7 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 }
 
 func (srv *Server) StopAccepting() {
-	srv.stopAccepting <- 1
+	close(srv.stopAccepting)
 }
 
 func (srv *Server) Port() int {
