@@ -190,9 +190,15 @@ func (srv *Server) serve() (e error) {
 	return nil
 }
 
+func (srv *Server) sentinel(c net.Conn) {
+	<- srv.stopAccepting
+	c.SetReadDeadline(time.Now())
+}
+
 func (srv *Server) handler(c net.Conn) {
 	startTime := time.Now()
 	defer srv.connectionFinished(c)
+	go srv.sentinel(c)
 	buf := bufio.NewReaderSize(c, 8192)
 	var err error
 	var req *http.Request
@@ -231,8 +237,8 @@ func (srv *Server) handler(c net.Conn) {
 			srv.requestFinished(request)
 		} else {
 			// EOF is socket closed
-			if err != io.ErrUnexpectedEOF {
-				Error("%s %v ERROR reading request: %v", srv.serverLogPrefix(), c.RemoteAddr(), err)
+			if nerr, ok := err.(net.Error); err != io.ErrUnexpectedEOF && !(ok && nerr.Timeout()) {
+				Error("%s %v ERROR reading request: <%T %v>", srv.serverLogPrefix(), c.RemoteAddr(), err, err)
 			}
 		}
 	}
