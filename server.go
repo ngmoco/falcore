@@ -10,13 +10,12 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
+	"runtime"
 	"strconv"
 	"sync"
 	"syscall"
 	"time"
-	
-	"reflect"
-	"runtime"
 )
 
 type Server struct {
@@ -28,6 +27,9 @@ type Server struct {
 	handlerWaitGroup *sync.WaitGroup
 	logPrefix        string
 	AcceptReady      chan int
+	sendfile         bool
+	sockOpt          int
+	bufferPool       *bufferPool
 }
 
 func NewServer(port int, pipeline *Pipeline) *Server {
@@ -38,6 +40,24 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 	s.AcceptReady = make(chan int, 1)
 	s.handlerWaitGroup = new(sync.WaitGroup)
 	s.logPrefix = fmt.Sprintf("%d", syscall.Getpid())
+
+	// openbsd/netbsd don't have TCP_NOPUSH so it's likely sendfile will be slower
+	// without these socket options, just enable for linux, mac and freebsd.
+	// TODO (Graham) windows has TransmitFile zero-copy mechanism, try to use it
+	switch runtime.GOOS {
+	case "linux":
+		s.sendfile = true
+		s.sockOpt = 0x3 // syscall.TCP_CORK
+	case "freebsd", "darwin":
+		s.sendfile = true
+		s.sockOpt = 0x4 // syscall.TCP_NOPUSH
+	default:
+		s.sendfile = false
+	}
+
+	// buffer pool for reusing connection bufio.Readers
+	s.bufferPool = newBufferPool(100, 8192)
+
 	return s
 }
 
@@ -71,8 +91,15 @@ func (srv *Server) socketListen() error {
 		if srv.listenerFile, err = l.File(); err != nil {
 			return err
 		}
-		if e := setupFDNonblock(int(srv.listenerFile.Fd())); e != nil {
+		fd := int(srv.listenerFile.Fd())
+		if e := setupFDNonblock(fd); e != nil {
 			return e
+		}
+
+		if srv.sendfile {
+			if e := syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, srv.sockOpt, 1); e != nil {
+				return e
+			}
 		}
 	}
 	return nil
@@ -92,10 +119,8 @@ func setupFDNonblock(fd int) error {
 			}
 		}
 	}
-	
 	return nil
 }
-
 
 func (srv *Server) ListenAndServe() error {
 	if srv.Addr == "" {
@@ -193,14 +218,15 @@ func (srv *Server) serve() (e error) {
 func (srv *Server) handler(c net.Conn) {
 	startTime := time.Now()
 	defer srv.connectionFinished(c)
-	buf := bufio.NewReaderSize(c, 8192)
+	bpe := srv.bufferPool.take(c)
+	defer srv.bufferPool.give(bpe)
 	var err error
 	var req *http.Request
 	// no keepalive (for now)
 	reqCount := 0
 	keepAlive := true
 	for err == nil && keepAlive {
-		if req, err = http.ReadRequest(buf); err == nil {
+		if req, err = http.ReadRequest(bpe.br); err == nil {
 			if req.Header.Get("Connection") != "Keep-Alive" {
 				keepAlive = false
 			}
@@ -220,9 +246,15 @@ func (srv *Server) handler(c net.Conn) {
 			// cleanup
 			request.startPipelineStage("server.ResponseWrite")
 			req.Body.Close()
-			wbuf := bufio.NewWriter(c)
-			res.Write(wbuf)
-			wbuf.Flush()
+
+			if srv.sendfile {
+				res.Write(c)
+			} else {
+				wbuf := bufio.NewWriter(c)
+				res.Write(wbuf)
+				wbuf.Flush()
+			}
+
 			if res.Body != nil {
 				res.Body.Close()
 			}

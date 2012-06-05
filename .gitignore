@@ -1,6 +1,8 @@
 *.6
 _*
 6.out
+*.swp
+tags
 bin
 examples/hot_restart/hot_restart
 examples/hello_world/hello_world
