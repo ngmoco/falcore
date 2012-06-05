@@ -167,7 +167,7 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 }
 
 func (srv *Server) StopAccepting() {
-	srv.stopAccepting <- 1
+	close(srv.stopAccepting)
 }
 
 func (srv *Server) Port() int {
@@ -215,19 +215,32 @@ func (srv *Server) serve() (e error) {
 	return nil
 }
 
+// process and write gorouting.  1 per connection
+// signals complete by closing the connection
 func (srv *Server) handler(c net.Conn) {
 	startTime := time.Now()
-	defer srv.connectionFinished(c)
-	bpe := srv.bufferPool.take(c)
-	defer srv.bufferPool.give(bpe)
+	var readChan = make(chan *http.Request, 1)
+	defer srv.connectionFinished(c, readChan)
 	var err error
 	var req *http.Request
-	// no keepalive (for now)
+	var ok bool
+	go srv.readToChan(c, readChan)
 	reqCount := 0
 	keepAlive := true
 	for err == nil && keepAlive {
-		if req, err = http.ReadRequest(bpe.br); err == nil {
-			if req.Header.Get("Connection") != "Keep-Alive" {
+		select {
+		case <- srv.stopAccepting:
+			// graceful shutdown.  do not process any more requests
+			// Debug("WRITCHAN: stopAccepting")
+			return
+		case req, ok = <- readChan:
+			if req == nil {
+				// Debug("WRITCHAN: readChan is empty.  shutting it down")
+				return
+			}
+			
+			if !ok || req.Header.Get("Connection") != "Keep-Alive" {
+				// Debug("WRITCHAN: readChan still open: %v", ok)
 				keepAlive = false
 			}
 			request := newRequest(req, c, startTime)
@@ -261,14 +274,36 @@ func (srv *Server) handler(c net.Conn) {
 			request.finishPipelineStage()
 			request.finishRequest()
 			srv.requestFinished(request)
+			
+		}
+	}
+	//Debug("%s Processed %v requests on connection %v", srv.serverLogPrefix(), reqCount, c.RemoteAddr())
+}
+
+// Read goroutine.  1 per connection.
+// Signals complete by closing reqChan
+func (srv *Server) readToChan(c net.Conn, reqChan chan *http.Request) {
+	bpe := srv.bufferPool.take(c)
+	defer srv.bufferPool.give(bpe)
+	defer close(reqChan)
+
+	var err error
+	var req *http.Request
+
+	for err == nil {
+		if req, err = http.ReadRequest(bpe.br); err == nil {
+			select {
+				case <- srv.stopAccepting:
+					// Debug("READCHAN: stopAccepting")
+					err = io.ErrUnexpectedEOF
+				case reqChan <- req:
+			}
 		} else {
-			// EOF is socket closed
 			if err != io.ErrUnexpectedEOF {
 				Error("%s %v ERROR reading request: %v", srv.serverLogPrefix(), c.RemoteAddr(), err)
 			}
 		}
 	}
-	//Debug("%s Processed %v requests on connection %v", srv.serverLogPrefix(), reqCount, c.RemoteAddr())
 }
 
 func (srv *Server) serverLogPrefix() string {
@@ -282,7 +317,13 @@ func (srv *Server) requestFinished(request *Request) {
 	}
 }
 
-func (srv *Server) connectionFinished(c net.Conn) {
+func (srv *Server) connectionFinished(c net.Conn, readChan chan *http.Request) {
+	// Debug("WRITCHAN: connectionFinished")
 	c.Close()
 	srv.handlerWaitGroup.Done()
+	// drain readChan to make sure the reader goroutine exists and there's no leak
+	for ok := true; ok; {
+		_, ok = <- readChan
+	}
+	// Debug("WRITCHAN: connectionFinished complete")
 }
