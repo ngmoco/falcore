@@ -190,15 +190,19 @@ func (srv *Server) serve() (e error) {
 	return nil
 }
 
-func (srv *Server) sentinel(c net.Conn) {
-	<- srv.stopAccepting
-	c.SetReadDeadline(time.Now())
+func (srv *Server) sentinel(c net.Conn, connClosed chan int) {
+	select {
+	case <- srv.stopAccepting:
+		c.SetReadDeadline(time.Now())
+	case <- connClosed:
+	}
 }
 
 func (srv *Server) handler(c net.Conn) {
 	startTime := time.Now()
-	defer srv.connectionFinished(c)
-	go srv.sentinel(c)
+	var closeSentinelChan = make(chan int)
+	go srv.sentinel(c, closeSentinelChan)
+	defer srv.connectionFinished(c, closeSentinelChan)
 	buf := bufio.NewReaderSize(c, 8192)
 	var err error
 	var req *http.Request
@@ -256,7 +260,8 @@ func (srv *Server) requestFinished(request *Request) {
 	}
 }
 
-func (srv *Server) connectionFinished(c net.Conn) {
+func (srv *Server) connectionFinished(c net.Conn, closeChan chan int) {
 	c.Close()
+	close(closeChan)
 	srv.handlerWaitGroup.Done()
 }
