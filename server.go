@@ -230,6 +230,16 @@ func (srv *Server) handler(c net.Conn) {
 			// cleanup
 			request.startPipelineStage("server.ResponseWrite")
 			req.Body.Close()
+
+			// shutting down?
+			select {
+			case <- srv.stopAccepting:
+				keepAlive = false
+				res.Close = true
+			default:
+			}
+
+			// write response
 			wbuf := bufio.NewWriter(c)
 			res.Write(wbuf)
 			wbuf.Flush()
