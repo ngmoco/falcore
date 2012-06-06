@@ -5,22 +5,27 @@ import (
 	"net/http"
 	"testing"
 	"time"
+	"io/ioutil"
+	//"io"
 )
 
 func TestStringBody(t *testing.T) {
 	expected := []byte("HOT HOT HOT!!!")
-	tmp, _ := http.NewRequest("POST", "/hello", bytes.NewBuffer(expected))
+	tmp, _ := http.NewRequest("POST", "/hello", bytes.NewReader(expected))
 	tmp.Header.Set("Content-Type", "text/plain")
 	tmp.ContentLength = int64(len(expected))
 	req := newRequest(tmp, nil, time.Now())
 	req.startPipelineStage("StringBodyTest")
 
-	sbf := &StringBodyFilter{}
+	sbf := NewStringBodyFilter()
+	//sbf := &StringBodyFilter{}
 	sbf.FilterRequest(req)
 
 	if sb, ok := req.HttpRequest.Body.(*StringBody); ok {
-		if bytes.Compare([]byte(sb.BodyString), expected) != 0 {
-			t.Errorf("Body string not read %q expected %q", sb.BodyString, expected)
+		readin, _ := ioutil.ReadAll(sb)
+		sb.Close()
+		if bytes.Compare(readin, expected) != 0 {
+			t.Errorf("Body string not read %q expected %q", readin, expected)
 		}
 	} else {
 		t.Errorf("Body not replaced with StringBody")
@@ -51,4 +56,34 @@ func TestStringBody(t *testing.T) {
 
 	}
 
+}
+
+func BenchmarkStringBody(b *testing.B) {
+	b.StopTimer()
+	expected := []byte("test=123456&test2=987654&test3=somedatanstuff&test4=moredataontheend")
+	expLen := int64(len(expected))
+	req := newRequest(nil, nil, time.Now())
+	req.startPipelineStage("StringBodyTest")
+
+	sbf := NewStringBodyFilter()
+	//sbf := &StringBodyFilter{}
+
+    for i := 0; i < b.N; i++ {
+		tmp, _ := http.NewRequest("POST", "/hello", bytes.NewReader(expected))
+		tmp.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		tmp.ContentLength = expLen
+		req.HttpRequest = tmp
+		b.StartTimer()
+		// replace the body
+		sbf.FilterRequest(req)
+		sbf.ReturnBuffer(req)
+		// read the body twice
+		/* nah, this isn't so useful
+		io.CopyN(ioutil.Discard, req.HttpRequest.Body, req.HttpRequest.ContentLength)
+		req.HttpRequest.Body	.Close()
+		io.CopyN(ioutil.Discard, req.HttpRequest.Body, req.HttpRequest.ContentLength)
+		req.HttpRequest.Body	.Close()		
+		*/
+		b.StopTimer()    		
+    }
 }
