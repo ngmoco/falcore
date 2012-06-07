@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"bytes"
+	"time"
 )
 
 // Keeps the body of a request in a string so it can be re-read at each stage of the pipeline
@@ -43,21 +44,29 @@ func (sbf *StringBodyFilter) FilterRequest(request *Request) *http.Response {
 // reads the request body and replaces the buffer with self
 // returns nil if the body is multipart and not replaced
 func (sbf *StringBodyFilter)readRequestBody(r *http.Request) (sb *StringBody, err error) {
+	start := time.Now()
 	ct := r.Header.Get("Content-Type")
 	// leave it on the buffer if we're multipart
 	if strings.SplitN(ct, ";", 2)[0] != "multipart/form-data" && r.ContentLength > 0 {
 		sb = &StringBody{}
 		const maxFormSize = int64(10 << 20) // 10 MB is a lot of text.
 		sb.bpe = sbf.pool.take(io.LimitReader(r.Body, maxFormSize+1))
-		
+		cumu := time.Since(start)
+		Warn("C1: %v", cumu)
 		b, e := sb.bpe.br.ReadBytes(0)
+		cumu = time.Since(start)
+		Warn("C2: %v", cumu)
 		//Error("B: %v, E: %v\n", b, e)
 		if e != nil && e != io.EOF {
 			return nil, e
 		}
 		sb.BodyBuffer = bytes.NewReader(b)
+		cumu = time.Since(start)
+		Warn("C3: %v", cumu)
 		go r.Body.Close()
 		r.Body = sb
+		cumu = time.Since(start)
+		Warn("C4: %v", cumu)
 		return sb, nil
 	}
 	return nil, nil // ignore	
