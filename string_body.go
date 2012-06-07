@@ -50,25 +50,21 @@ func (sbf *StringBodyFilter)readRequestBody(r *http.Request) (sb *StringBody, er
 	if strings.SplitN(ct, ";", 2)[0] != "multipart/form-data" && r.ContentLength > 0 {
 		sb = &StringBody{}
 		const maxFormSize = int64(10 << 20) // 10 MB is a lot of text.
-		//rr := io.LimitReader(r.Body, maxFormSize+1)
-		rr := r.Body
-		sb.bpe = sbf.pool.take(rr)
+		
+		sb.bpe = sbf.pool.take(io.LimitReader(r.Body, maxFormSize+1))
+		b := make([]byte, r.ContentLength)
+		_, e := sb.bpe.br.Read(b)
 		cumu := time.Since(start)
-		Warn("C1: %v", cumu)
-		b, e := sb.bpe.br.ReadBytes(0)
-		cumu = time.Since(start)
-		Warn("C2: %v", cumu)
+		if cumu > time.Millisecond {
+			Warn("C2: %v", cumu)
+		}
 		//Error("B: %v, E: %v\n", b, e)
 		if e != nil && e != io.EOF {
 			return nil, e
 		}
 		sb.BodyBuffer = bytes.NewReader(b)
-		cumu = time.Since(start)
-		Warn("C3: %v", cumu)
-		go r.Body.Close()
+		r.Body.Close()
 		r.Body = sb
-		cumu = time.Since(start)
-		Warn("C4: %v", cumu)
 		return sb, nil
 	}
 	return nil, nil // ignore	
