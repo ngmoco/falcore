@@ -2,10 +2,10 @@ package falcore
 
 import (
 	"bytes"
+	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
-	"io/ioutil"
 	//"io"
 )
 
@@ -68,7 +68,7 @@ func BenchmarkStringBody(b *testing.B) {
 	sbf := NewStringBodyFilter()
 	//sbf := &StringBodyFilter{}
 
-    for i := 0; i < b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		tmp, _ := http.NewRequest("POST", "/hello", bytes.NewReader(expected))
 		tmp.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		tmp.ContentLength = expLen
@@ -84,6 +84,6 @@ func BenchmarkStringBody(b *testing.B) {
 		io.CopyN(ioutil.Discard, req.HttpRequest.Body, req.HttpRequest.ContentLength)
 		req.HttpRequest.Body	.Close()		
 		*/
-		b.StopTimer()    		
-    }
+		b.StopTimer()
+	}
 }

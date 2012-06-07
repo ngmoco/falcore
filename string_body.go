@@ -1,12 +1,10 @@
 package falcore
 
 import (
+	"bytes"
 	"io"
-	//"io/ioutil"
 	"net/http"
 	"strings"
-	"bytes"
-	"time"
 )
 
 // Keeps the body of a request in a string so it can be re-read at each stage of the pipeline
@@ -14,7 +12,7 @@ import (
 
 type StringBody struct {
 	BodyBuffer *bytes.Reader
-	bpe *bufferPoolEntry
+	bpe        *bufferPoolEntry
 }
 
 type StringBodyFilter struct {
@@ -43,40 +41,32 @@ func (sbf *StringBodyFilter) FilterRequest(request *Request) *http.Response {
 
 // reads the request body and replaces the buffer with self
 // returns nil if the body is multipart and not replaced
-func (sbf *StringBodyFilter)readRequestBody(r *http.Request) (sb *StringBody, err error) {
-	start := time.Now()
+func (sbf *StringBodyFilter) readRequestBody(r *http.Request) (sb *StringBody, err error) {
 	ct := r.Header.Get("Content-Type")
 	// leave it on the buffer if we're multipart
 	if strings.SplitN(ct, ";", 2)[0] != "multipart/form-data" && r.ContentLength > 0 {
 		sb = &StringBody{}
 		const maxFormSize = int64(10 << 20) // 10 MB is a lot of text.
-		
 		sb.bpe = sbf.pool.take(io.LimitReader(r.Body, maxFormSize+1))
-		bb := bytes.NewBuffer(make([]byte, 0, 512))
-		cumu := time.Since(start)
-		//Warn("C1: %v", cumu)		
-		b, e := io.Copy(bb ,sb.bpe.br)
-		cumu = time.Since(start)
-		if cumu > time.Millisecond {
-			Warn("C2: %v %v", cumu, b)
-		}
-		//Error("B: %v, E: %v\n", b, e)
+
+		// There shouldn't be a null byte so we should get EOF
+		b, e := sb.bpe.br.ReadBytes(0)
 		if e != nil && e != io.EOF {
 			return nil, e
 		}
-		sb.BodyBuffer = bytes.NewReader(bb.Bytes())
+		sb.BodyBuffer = bytes.NewReader(b)
 		r.Body.Close()
 		r.Body = sb
 		return sb, nil
 	}
-	return nil, nil // ignore	
+	return nil, nil // ignore
 }
 
 // Returns a buffer used in the FilterRequest stage to a buffer pool
 // this speeds up this filter significantly by reusing buffers
-func (sbf *StringBodyFilter)ReturnBuffer(request *Request) {
+func (sbf *StringBodyFilter) ReturnBuffer(request *Request) {
 	if sb, ok := request.HttpRequest.Body.(*StringBody); ok {
-		sbf.pool.give(sb.bpe)	
+		sbf.pool.give(sb.bpe)
 	}
 }
 
@@ -85,7 +75,6 @@ func (sbf *StringBodyFilter)ReturnBuffer(request *Request) {
 func (sbf *StringBodyFilter) FilterResponse(request *Request, res *http.Response) {
 	sbf.ReturnBuffer(request)
 }
-
 
 func (sb *StringBody) Read(b []byte) (n int, err error) {
 	return sb.BodyBuffer.Read(b)
