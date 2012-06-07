@@ -51,9 +51,9 @@ func (sbf *StringBodyFilter)readRequestBody(r *http.Request) (sb *StringBody, er
 		sb = &StringBody{}
 		const maxFormSize = int64(10 << 20) // 10 MB is a lot of text.
 		
-		sb.bpe = sbf.pool.take(io.LimitReader(r.Body, maxFormSize+1))
+		//sb.bpe = sbf.pool.take(io.LimitReader(r.Body, maxFormSize+1))
 		b := make([]byte, r.ContentLength)
-		_, e := sb.bpe.br.Read(b)
+		_, e := r.Body.Read(b)
 		cumu := time.Since(start)
 		if cumu > time.Millisecond {
 			Warn("C2: %v", cumu)
@@ -81,7 +81,7 @@ func (sbf *StringBodyFilter)ReturnBuffer(request *Request) {
 // Insert this in the response pipeline to return the buffer pool for the request body
 // If there is an appropriate place in your flow, you can call ReturnBuffer explicitly
 func (sbf *StringBodyFilter) FilterResponse(request *Request, res *http.Response) {
-	sbf.ReturnBuffer(request)
+	//sbf.ReturnBuffer(request)
 }
 
 
