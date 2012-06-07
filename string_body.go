@@ -56,7 +56,7 @@ func (sbf *StringBodyFilter)readRequestBody(r *http.Request) (sb *StringBody, er
 			return nil, e
 		}
 		sb.BodyBuffer = bytes.NewReader(b)
-		r.Body.Close()
+		go r.Body.Close()
 		r.Body = sb
 		return sb, nil
 	}
