@@ -193,7 +193,7 @@ func (srv *Server) serve() (e error) {
 func (srv *Server) sentinel(c net.Conn, connClosed chan int) {
 	select {
 	case <- srv.stopAccepting:
-		c.SetReadDeadline(time.Now())
+		c.SetReadDeadline(time.Now().Add(3 * time.Second))
 	case <- connClosed:
 	}
 }
