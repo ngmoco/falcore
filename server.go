@@ -167,7 +167,7 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 }
 
 func (srv *Server) StopAccepting() {
-	srv.stopAccepting <- 1
+	close(srv.stopAccepting)
 }
 
 func (srv *Server) Port() int {
@@ -215,11 +215,21 @@ func (srv *Server) serve() (e error) {
 	return nil
 }
 
+func (srv *Server) sentinel(c net.Conn, connClosed chan int) {
+	select {
+	case <-srv.stopAccepting:
+		c.SetReadDeadline(time.Now().Add(3 * time.Second))
+	case <-connClosed:
+	}
+}
+
 func (srv *Server) handler(c net.Conn) {
 	startTime := time.Now()
-	defer srv.connectionFinished(c)
 	bpe := srv.bufferPool.take(c)
 	defer srv.bufferPool.give(bpe)
+	var closeSentinelChan = make(chan int)
+	go srv.sentinel(c, closeSentinelChan)
+	defer srv.connectionFinished(c, closeSentinelChan)
 	var err error
 	var req *http.Request
 	// no keepalive (for now)
@@ -247,6 +257,15 @@ func (srv *Server) handler(c net.Conn) {
 			request.startPipelineStage("server.ResponseWrite")
 			req.Body.Close()
 
+			// shutting down?
+			select {
+			case <-srv.stopAccepting:
+				keepAlive = false
+				res.Close = true
+			default:
+			}
+
+			// write response
 			if srv.sendfile {
 				res.Write(c)
 			} else {
@@ -254,7 +273,6 @@ func (srv *Server) handler(c net.Conn) {
 				res.Write(wbuf)
 				wbuf.Flush()
 			}
-
 			if res.Body != nil {
 				res.Body.Close()
 			}
@@ -266,8 +284,8 @@ func (srv *Server) handler(c net.Conn) {
 			startTime = time.Now()
 		} else {
 			// EOF is socket closed
-			if err != io.ErrUnexpectedEOF {
-				Error("%s %v ERROR reading request: %v", srv.serverLogPrefix(), c.RemoteAddr(), err)
+			if nerr, ok := err.(net.Error); err != io.EOF && !(ok && nerr.Timeout()) {
+				Error("%s %v ERROR reading request: <%T %v>", srv.serverLogPrefix(), c.RemoteAddr(), err, err)
 			}
 		}
 	}
@@ -285,7 +303,8 @@ func (srv *Server) requestFinished(request *Request) {
 	}
 }
 
-func (srv *Server) connectionFinished(c net.Conn) {
+func (srv *Server) connectionFinished(c net.Conn, closeChan chan int) {
 	c.Close()
+	close(closeChan)
 	srv.handlerWaitGroup.Done()
 }
