@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"reflect"
 )
 
 // Request wrapper
@@ -67,6 +68,19 @@ func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Requ
 	fReq.PipelineStageStats = list.New()
 	fReq.pipelineHash = crc32.NewIEEE()
 	return fReq
+}
+
+// Returns a completed falcore.Request and response after running the single filter stage
+// The PipelineStageStats is completed in the returned Request 
+// The falcore.Request.Connection and falcore.Request.RemoteAddr are nil
+func TestWithRequest(request *http.Request, filter RequestFilter) (*Request, *http.Response) {
+	r := newRequest(request, nil, time.Now())
+	t := reflect.TypeOf(filter)
+	r.startPipelineStage(t.String())
+	res := filter.FilterRequest(r)
+	r.finishPipelineStage()
+	r.finishRequest()
+	return r, res
 }
 
 // Starts a new pipeline stage and makes it the CurrentStage.
