@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"time"
 	"reflect"
+	"time"
 )
 
 // Request wrapper
@@ -46,6 +46,7 @@ type Request struct {
 	RemoteAddr         *net.TCPAddr
 	PipelineStageStats *list.List
 	CurrentStage       *PipelineStageStat
+	context            Context
 	pipelineHash       hash.Hash32
 	piplineTot         time.Duration
 	Overhead           time.Duration
@@ -139,6 +140,38 @@ func (fReq *Request) Trace() {
 func (fReq *Request) finishRequest() {
 	fReq.EndTime = time.Now()
 	fReq.Overhead = fReq.EndTime.Sub(fReq.StartTime) - fReq.piplineTot
+}
+
+type Context map[interface{}]interface{}
+
+// Set stores a value for a given key in the request
+func (fReq *Request) Set(key, val interface{}) {
+	if fReq.context == nil {
+		fReq.context = make(map[interface{}]interface{})
+	}
+	fReq.context[key] = val
+}
+
+// Get returns a value registered for a given key in the request
+func (fReq *Request) Get(key interface{}) interface{} {
+	if fReq.context != nil && fReq.context[key] != nil {
+		return fReq.context[key]
+	}
+	return nil
+}
+
+// Delete removes the value for a given key in the request
+func (fReq *Request) Delete(key interface{}) {
+	if fReq != nil && fReq.context[key] != nil {
+		delete(fReq.context, key)
+	}
+}
+
+// Clear removes all values of the request
+func (fReq *Request) Clear() {
+	if fReq.context != nil {
+		fReq.context = make(map[interface{}]interface{})
+	}
 }
 
 // Container for keeping stats per pipeline stage 
