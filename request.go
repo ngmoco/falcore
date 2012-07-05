@@ -49,11 +49,13 @@ type Request struct {
 	pipelineHash       hash.Hash32
 	piplineTot         time.Duration
 	Overhead           time.Duration
+	Context            map[string]interface{}
 }
 
 // Used internally to create and initialize a new request.
 func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Request {
 	fReq := new(Request)
+	fReq.Context = make(map[string]interface{})
 	fReq.HttpRequest = request
 	fReq.StartTime = startTime
 	fReq.Connection = conn
