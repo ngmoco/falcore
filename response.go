@@ -32,3 +32,15 @@ func (s *fixedResBody) Close() error {
 func (s *fixedResBody) Read(b []byte) (int, error) {
 	return (*strings.Reader)(s).Read(b)
 }
+
+func RedirectResponse(req *http.Request, url string) *http.Response {
+	res := new(http.Response)
+	res.StatusCode = 302
+	res.ProtoMajor = 1
+	res.ProtoMinor = 1
+	res.ContentLength = 0
+	res.Request = req
+	res.Header = make(map[string][]string)
+	res.Header.Set("Location", url)
+	return res
+}
