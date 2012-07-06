@@ -6,9 +6,9 @@ import (
 	"fmt"
 )
 
-// Implements the RequestFilter using a http.Handleer to produce the response
-// This will always return a response due to the requirements of the http.HandleFunc
-// interface.
+// Implements a RequestFilter using a http.Handler to produce the response
+// This will always return a response due to the requirements of the http.Handler
+// interface so it should be placed at the end of the Upstream pipeline.
 type HandlerFilter struct {
 	handler http.Handler
 }
