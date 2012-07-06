@@ -6,23 +6,23 @@ import (
 	"fmt"
 )
 
-// Implements the RequestFilter using a http.HandleFunc to produce the response
-// This will always return a response due to the requirements of the http.HandleFunc
-// interface.
-type HandlerFuncFilter struct {
-	handler http.HandlerFunc
+// Implements a RequestFilter using a http.Handler to produce the response
+// This will always return a response due to the requirements of the http.Handler
+// interface so it should be placed at the end of the Upstream pipeline.
+type HandlerFilter struct {
+	handler http.Handler
 }
 
-func NewHandlerFuncFilter(handler http.HandlerFunc) (*HandlerFuncFilter) {
-	return &HandlerFuncFilter{ handler: handler}
+func NewHandlerFilter(handler http.Handler) (*HandlerFilter) {
+	return &HandlerFilter{ handler: handler}
 }
 
-func (h *HandlerFuncFilter) FilterRequest(req *Request) *http.Response {
+func (h *HandlerFilter) FilterRequest(req *Request) *http.Response {
 	rw, respc := newPopulateResponseWriter()
 	// this must be done concurrently so that the HandlerFunc can write the response
 	// while falcore is copying it to the socket
 	go func() {
-		h.handler(rw, req.HttpRequest)
+		h.handler.ServeHTTP(rw, req.HttpRequest)
 		rw.finish()
 	}()
 	return <-respc

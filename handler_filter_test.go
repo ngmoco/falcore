@@ -7,13 +7,13 @@ import (
 	"io/ioutil"
 )
 
-func TestHandlerFuncFilter(t *testing.T) {
+func TestHandlerFilter(t *testing.T) {
 	reply := "Hello, World"
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, reply)
 	}
 	
-	hff := NewHandlerFuncFilter(handler)
+	hff := NewHandlerFilter(http.HandlerFunc(handler))
 
 	tmp, _ := http.NewRequest("GET", "/hello", nil)
 	_, res := TestWithRequest(tmp, hff)
