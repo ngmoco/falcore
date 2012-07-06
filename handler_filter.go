@@ -18,7 +18,7 @@ func NewHandlerFilter(handler http.Handler) (*HandlerFilter) {
 }
 
 func (h *HandlerFilter) FilterRequest(req *Request) *http.Response {
-	rw, respc := newPopulateResponseWriter()
+	rw, respc := newPopulateResponseWriter(req.HttpRequest)
 	// this must be done concurrently so that the HandlerFunc can write the response
 	// while falcore is copying it to the socket
 	go func() {
@@ -29,7 +29,7 @@ func (h *HandlerFilter) FilterRequest(req *Request) *http.Response {
 }
 
 // copied from net/http/filetransport.go
-func newPopulateResponseWriter() (*populateResponse, <-chan *http.Response) {
+func newPopulateResponseWriter(req *http.Request) (*populateResponse, <-chan *http.Response) {
 	pr, pw := io.Pipe()
 	rw := &populateResponse{
 		ch: make(chan *http.Response),
@@ -40,6 +40,7 @@ func newPopulateResponseWriter() (*populateResponse, <-chan *http.Response) {
 			Header:     make(http.Header),
 			Close:      true,
 			Body:       pr,
+			Request:	    req,
 		},
 	}
 	return rw, rw.ch
