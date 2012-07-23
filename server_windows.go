@@ -6,6 +6,6 @@ import (
 )
 
 // only valid on non-windows
-func SetupNonBlockingListener(srv *Server, err error, l *net.TCPListener) error {
+func (srv *Server) setupNonBlockingListener(err error, l *net.TCPListener) error {
 	return nil
 }

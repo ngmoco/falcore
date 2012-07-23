@@ -86,10 +86,7 @@ func (srv *Server) socketListen() error {
 	srv.listener = l
 	// setup listener to be non-blocking if we're not on windows.
 	// this is required for hot restart to work.
-	if e := SetupNonBlockingListener(srv, err, l); e != nil {
-		return e
-	}
-	return nil
+	return srv.setupNonBlockingListener(err, l)
 }
 
 func (srv *Server) ListenAndServe() error {
