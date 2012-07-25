@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"reflect"
 	"runtime"
 	"strconv"
 	"sync"
@@ -87,39 +86,7 @@ func (srv *Server) socketListen() error {
 	srv.listener = l
 	// setup listener to be non-blocking if we're not on windows.
 	// this is required for hot restart to work.
-	if runtime.GOOS != "windows" {
-		if srv.listenerFile, err = l.File(); err != nil {
-			return err
-		}
-		fd := int(srv.listenerFile.Fd())
-		if e := setupFDNonblock(fd); e != nil {
-			return e
-		}
-
-		if srv.sendfile {
-			if e := syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, srv.sockOpt, 1); e != nil {
-				return e
-			}
-		}
-	}
-	return nil
-}
-
-// Calling syscall.SetNonblock using reflection to avoid compile errors
-// on windows.  This call is not used on windows as hot restart is not supported.
-func setupFDNonblock(fd int) error {
-	// if function exists
-	if fun := reflect.ValueOf(syscall.SetNonblock); fun.Kind() == reflect.Func {
-		// if first argument is an int
-		if fun.Type().In(0).Kind() == reflect.Int {
-			args := []reflect.Value{reflect.ValueOf(fd), reflect.ValueOf(true)}
-			if res := fun.Call(args); len(res) == 1 && !res[0].IsNil() {
-				err := res[0].Interface().(error)
-				return err
-			}
-		}
-	}
-	return nil
+	return srv.setupNonBlockingListener(err, l)
 }
 
 func (srv *Server) ListenAndServe() error {
