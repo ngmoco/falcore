@@ -44,5 +44,6 @@ To use falcore to serve HTTPS, simply call `ListenAndServeTLS` instead of `Liste
 
 * [Graham Anderson](http://www.github.com/gnanderson)
 * [Amir Mohammad Saied](http://github.com/amir)
+* [James Wynn](https://github.com/jameswynn)
 
 [gb]: http://code.google.com/p/go-gb/
