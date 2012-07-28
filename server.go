@@ -231,6 +231,17 @@ func (srv *Server) handler(c net.Conn) {
 				res.Close = true
 			default:
 			}
+			// The res.Write omits Content-length on 0 length bodies, and by spec, 
+			// it SHOULD. While this is not MUST, it's kinda broken.  See sec 4.4 
+			// of rfc2616 and a 200 with a zero length does not satisfy any of the
+			// 5 conditions if Connection: keep-alive is set :(
+			// I'm forcing chunked which seems to work because I couldn't get the
+			// content length to write if it was 0.
+			// Specifically, the android http client waits forever if there's no
+			// content-length instead of assuming zero at the end of headers. der.
+			if res.ContentLength == 0 && len(res.TransferEncoding) == 0 && !((res.StatusCode-100 < 100) || res.StatusCode == 204 || res.StatusCode == 304) {
+				res.TransferEncoding = []string{"identity"}
+			}
 
 			// write response
 			if srv.sendfile {
