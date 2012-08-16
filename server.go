@@ -242,8 +242,8 @@ func (srv *Server) handler(c net.Conn) {
 			if res.ContentLength == 0 && len(res.TransferEncoding) == 0 && !((res.StatusCode-100 < 100) || res.StatusCode == 204 || res.StatusCode == 304) {
 				res.TransferEncoding = []string{"identity"}
 			}
-			if t.ContentLength < 0 {
-				t.TransferEncoding = []string{"chunked"}
+			if res.ContentLength < 0 {
+				res.TransferEncoding = []string{"chunked"}
 			}
 
 			// write response
