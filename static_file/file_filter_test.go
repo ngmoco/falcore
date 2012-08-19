@@ -23,6 +23,8 @@ func init() {
 	// setup mime
 	mime.AddExtensionType(".foo", "foo/bar")
 	mime.AddExtensionType(".json", "application/json")
+	mime.AddExtensionType(".txt", "text/plain")
+	mime.AddExtensionType(".png", "image/png")
 
 	go func() {
 
