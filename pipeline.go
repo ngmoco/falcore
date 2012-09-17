@@ -43,26 +43,24 @@ func (p *Pipeline) FilterRequest(req *Request) *http.Response {
 
 func (p *Pipeline) execute(req *Request) (res *http.Response) {
 	for e := p.Upstream.Front(); e != nil && res == nil; e = e.Next() {
-		if router, ok := e.Value.(Router); ok {
-			t := reflect.TypeOf(router)
-			req.startPipelineStage(t.String())
-			pipe := router.SelectPipeline(req)
-			req.finishPipelineStage()
-			if pipe != nil {
-				t := reflect.TypeOf(pipe)
-				req.startPipelineStage(t.String()[1:])
-				res = pipe.FilterRequest(req)
-				req.finishPipelineStage()
-			}
-		} else if filter, ok := e.Value.(RequestFilter); ok {
+		switch filter := e.Value.(type) {
+		case Router:
 			t := reflect.TypeOf(filter)
 			req.startPipelineStage(t.String())
-			res = filter.FilterRequest(req)
+			pipe := filter.SelectPipeline(req)
 			req.finishPipelineStage()
+			if pipe != nil {
+				res = p.execFilter(req, pipe)
+				if res != nil {
+					break
+				}
+			}
+		case RequestFilter:
+			res = p.execFilter(req, filter)
 			if res != nil {
 				break
 			}
-		} else {
+		default:
 			log.Printf("%v is not a RequestFilter\n", e.Value)
 			break
 		}
@@ -75,6 +73,15 @@ func (p *Pipeline) execute(req *Request) (res *http.Response) {
 
 	p.down(req, res)
 	return
+}
+
+func (p *Pipeline) execFilter(req *Request, filter RequestFilter)*http.Response {
+	if _, skipTracking := filter.(*Pipeline); !skipTracking {
+		t := reflect.TypeOf(filter)
+		req.startPipelineStage(t.String())
+		defer req.finishPipelineStage()
+	}
+	return filter.FilterRequest(req)
 }
 
 func (p *Pipeline) down(req *Request, res *http.Response) {
