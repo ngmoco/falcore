@@ -249,6 +249,7 @@ func (srv *Server) handler(c net.Conn) {
 			// write response
 			if srv.sendfile {
 				res.Write(c)
+				srv.cycleNonBlock(c)
 			} else {
 				wbuf := bufio.NewWriter(c)
 				res.Write(wbuf)
