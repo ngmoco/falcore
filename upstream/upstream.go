@@ -6,7 +6,14 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"io"
+	"bytes"
 )
+
+type passThruReadCloser struct {
+	io.Reader
+	io.Closer
+}
 
 type Upstream struct {
 	// The upstream host to connect to
@@ -87,9 +94,44 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	if u.tcpconn != nil {
 		u.tcpconn.SetDeadline(time.Now().Add(u.Timeout))
 	}
-	res, err = u.transport.RoundTrip(req)
+	var upstrRes *http.Response
+	upstrRes, err = u.transport.RoundTrip(req)
 	diff := falcore.TimeDiff(before, time.Now())
-	if err != nil {
+	if err == nil {
+		// Copy response over to new record.  Remove connection noise.  Add some sanity.
+		res = falcore.SimpleResponse(req, upstrRes.StatusCode, nil, "")
+		if upstrRes.ContentLength > 0 && upstrRes.Body != nil {
+			res.Body = upstrRes.Body
+		} else if upstrRes.ContentLength == 0 && upstrRes.Body != nil {
+			// Any bytes?
+			var testBuf [1]byte
+			n, _ := io.ReadFull(upstrRes.Body, testBuf[:])
+			if n == 1 {
+				// Yes there are.  Chunked it is.
+				res.TransferEncoding = []string{"chunked"}
+				rc := &passThruReadCloser{
+					io.MultiReader(bytes.NewBuffer(testBuf[:]), upstrRes.Body),
+					upstrRes.Body,
+				}
+				
+				res.Body = rc
+			}
+		} else if upstrRes.Body != nil {
+			res.Body = upstrRes.Body
+			res.TransferEncoding = []string{"chunked"}
+		}
+		// Copy over headers with a few exceptions
+		res.Header = make(http.Header)
+		for hn, hv := range upstrRes.Header {
+			switch hn {
+			case "Content-Length":
+			case "Connection":
+			case "Transfer-Encoding":
+			default:
+				res.Header[hn] = hv
+			}
+		}
+	} else {
 		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
 			falcore.Error("%s Upstream Timeout error: %v", request.ID, err)
 			res = falcore.SimpleResponse(req, 504, nil, "Gateway Timeout\n")
