@@ -101,6 +101,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 		// Copy response over to new record.  Remove connection noise.  Add some sanity.
 		res = falcore.SimpleResponse(req, upstrRes.StatusCode, nil, "")
 		if upstrRes.ContentLength > 0 && upstrRes.Body != nil {
+			res.ContentLength = upstrRes.ContentLength
 			res.Body = upstrRes.Body
 		} else if upstrRes.ContentLength == 0 && upstrRes.Body != nil {
 			// Any bytes?
