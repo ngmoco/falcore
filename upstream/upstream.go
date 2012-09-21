@@ -109,6 +109,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 			if n == 1 {
 				// Yes there are.  Chunked it is.
 				res.TransferEncoding = []string{"chunked"}
+				res.ContentLength = -1
 				rc := &passThruReadCloser{
 					io.MultiReader(bytes.NewBuffer(testBuf[:]), upstrRes.Body),
 					upstrRes.Body,
@@ -118,6 +119,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 			}
 		} else if upstrRes.Body != nil {
 			res.Body = upstrRes.Body
+			res.ContentLength = -1
 			res.TransferEncoding = []string{"chunked"}
 		}
 		// Copy over headers with a few exceptions
