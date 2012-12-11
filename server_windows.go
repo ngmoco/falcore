@@ -10,6 +10,6 @@ func (srv *Server) setupNonBlockingListener(err error, l *net.TCPListener) error
 	return nil
 }
 
-func (srv *Server) cycleNonBlock(c *net.Conn) {
+func (srv *Server) cycleNonBlock(c net.Conn) {
 	// nuthin
 }
