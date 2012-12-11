@@ -75,7 +75,7 @@ func (p *Pipeline) execute(req *Request) (res *http.Response) {
 	return
 }
 
-func (p *Pipeline) execFilter(req *Request, filter RequestFilter)*http.Response {
+func (p *Pipeline) execFilter(req *Request, filter RequestFilter) *http.Response {
 	if _, skipTracking := filter.(*Pipeline); !skipTracking {
 		t := reflect.TypeOf(filter)
 		req.startPipelineStage(t.String())

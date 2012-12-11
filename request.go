@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"time"
 	"reflect"
+	"time"
 )
 
 // Request wrapper

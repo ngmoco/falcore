@@ -1,9 +1,9 @@
 package falcore
 
 import (
-	"net/http"
-	"io"
 	"fmt"
+	"io"
+	"net/http"
 )
 
 // Implements a RequestFilter using a http.Handler to produce the response
@@ -13,8 +13,8 @@ type HandlerFilter struct {
 	handler http.Handler
 }
 
-func NewHandlerFilter(handler http.Handler) (*HandlerFilter) {
-	return &HandlerFilter{ handler: handler}
+func NewHandlerFilter(handler http.Handler) *HandlerFilter {
+	return &HandlerFilter{handler: handler}
 }
 
 func (h *HandlerFilter) FilterRequest(req *Request) *http.Response {
@@ -40,7 +40,7 @@ func newPopulateResponseWriter(req *http.Request) (*populateResponse, <-chan *ht
 			Header:     make(http.Header),
 			Close:      true,
 			Body:       pr,
-			Request:	    req,
+			Request:    req,
 		},
 	}
 	return rw, rw.ch
@@ -105,4 +105,3 @@ func (pr *populateResponse) Write(p []byte) (n int, err error) {
 	}
 	return pr.pw.Write(p)
 }
-

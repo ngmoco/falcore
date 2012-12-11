@@ -1,13 +1,13 @@
 package upstream
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ngmoco/falcore"
+	"io"
 	"net"
 	"net/http"
 	"time"
-	"io"
-	"bytes"
 )
 
 type passThruReadCloser struct {
@@ -115,7 +115,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 					io.MultiReader(bytes.NewBuffer(testBuf[:]), upstrRes.Body),
 					upstrRes.Body,
 				}
-				
+
 				res.Body = rc
 			}
 		} else if upstrRes.Body != nil {
