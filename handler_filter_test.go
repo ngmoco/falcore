@@ -16,7 +16,7 @@ func TestHandlerFilter(t *testing.T) {
 	hff := NewHandlerFilter(http.HandlerFunc(handler))
 
 	tmp, _ := http.NewRequest("GET", "/hello", nil)
-	_, res := TestWithRequest(tmp, hff)
+	_, res := TestWithRequest(tmp, hff, nil)
 
 	if res == nil {
 		t.Errorf("Response is nil")
