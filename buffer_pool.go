@@ -34,7 +34,7 @@ func newBufferPool(poolSize, bufferSize int) *bufferPool {
 	}
 }
 
-// Take a buffer from the pool and set 
+// Take a buffer from the pool and set
 // it up to read from r
 func (p *bufferPool) take(r io.Reader) (bpe *bufferPoolEntry) {
 	select {

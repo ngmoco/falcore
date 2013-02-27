@@ -82,7 +82,7 @@ func BenchmarkStringBody(b *testing.B) {
 		io.CopyN(ioutil.Discard, req.HttpRequest.Body, req.HttpRequest.ContentLength)
 		req.HttpRequest.Body	.Close()
 		io.CopyN(ioutil.Discard, req.HttpRequest.Body, req.HttpRequest.ContentLength)
-		req.HttpRequest.Body	.Close()		
+		req.HttpRequest.Body	.Close()
 		*/
 		b.StopTimer()
 	}
