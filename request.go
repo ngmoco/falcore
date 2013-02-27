@@ -77,6 +77,9 @@ func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Requ
 // The falcore.Request.Connection and falcore.Request.RemoteAddr are nil
 func TestWithRequest(request *http.Request, filter RequestFilter, context map[string]interface{}) (*Request, *http.Response) {
 	r := newRequest(request, nil, time.Now())
+	if context == nil {
+		context = make(map[string]interface{})
+	}
 	r.Context = context
 	t := reflect.TypeOf(filter)
 	r.startPipelineStage(t.String())
