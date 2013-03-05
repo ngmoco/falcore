@@ -231,8 +231,8 @@ func (srv *Server) handler(c net.Conn) {
 				res.Close = true
 			default:
 			}
-			// The res.Write omits Content-length on 0 length bodies, and by spec, 
-			// it SHOULD. While this is not MUST, it's kinda broken.  See sec 4.4 
+			// The res.Write omits Content-length on 0 length bodies, and by spec,
+			// it SHOULD. While this is not MUST, it's kinda broken.  See sec 4.4
 			// of rfc2616 and a 200 with a zero length does not satisfy any of the
 			// 5 conditions if Connection: keep-alive is set :(
 			// I'm forcing chunked which seems to work because I couldn't get the
