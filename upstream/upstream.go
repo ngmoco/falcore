@@ -15,6 +15,25 @@ type passThruReadCloser struct {
 	io.Closer
 }
 
+type connWrapper struct {
+	conn    net.Conn
+	timeout time.Duration
+}
+
+func (cw *connWrapper) Write(b []byte) (int, error) {
+	if err := cw.conn.SetDeadline(time.Now().Add(cw.timeout)); err != nil {
+		return 0, err
+	}
+	return cw.conn.Write(b)
+}
+func (cw *connWrapper) Read(b []byte) (n int, err error)   { return cw.conn.Read(b) }
+func (cw *connWrapper) Close() error                       { return cw.conn.Close() }
+func (cw *connWrapper) LocalAddr() net.Addr                { return cw.conn.LocalAddr() }
+func (cw *connWrapper) RemoteAddr() net.Addr               { return cw.conn.RemoteAddr() }
+func (cw *connWrapper) SetDeadline(t time.Time) error      { return cw.conn.SetDeadline(t) }
+func (cw *connWrapper) SetReadDeadline(t time.Time) error  { return cw.conn.SetReadDeadline(t) }
+func (cw *connWrapper) SetWriteDeadline(t time.Time) error { return cw.conn.SetWriteDeadline(t) }
+
 type Upstream struct {
 	// The upstream host to connect to
 	Host string
@@ -30,7 +49,6 @@ type Upstream struct {
 	transport *http.Transport
 	host      string
 	tcpaddr   *net.TCPAddr
-	tcpconn   *net.TCPConn
 }
 
 func NewUpstream(host string, port int, forceHttp bool) *Upstream {
@@ -47,29 +65,27 @@ func NewUpstream(host string, port int, forceHttp bool) *Upstream {
 		}
 	}
 	if err == nil && ip != nil {
-		u.tcpaddr = new(net.TCPAddr)
+		u.tcpaddr = &net.TCPAddr{}
 		u.tcpaddr.Port = port
 		u.tcpaddr.IP = ip
 	} else {
 		falcore.Warn("Can't get IP addr for %v: %v", host, err)
 	}
-	u.Timeout = 60e9
+	u.Timeout = 60 * time.Second
 	u.host = fmt.Sprintf("%v:%v", u.Host, u.Port)
 
-	u.transport = new(http.Transport)
-
+	u.transport = &http.Transport{}
+	// This dial ignores the addr passed in and dials based on the upstream host and port
 	u.transport.Dial = func(n, addr string) (c net.Conn, err error) {
 		falcore.Fine("Dialing connection to %v", u.tcpaddr)
 		var ctcp *net.TCPConn
 		ctcp, err = net.DialTCP("tcp4", nil, u.tcpaddr)
-		if ctcp != nil {
-			u.tcpconn = ctcp
-			u.tcpconn.SetDeadline(time.Now().Add(u.Timeout))
-		}
 		if err != nil {
 			falcore.Error("Dial Failed: %v", err)
+			return
 		}
-		return ctcp, err
+		c = &connWrapper{conn: ctcp, timeout: u.Timeout}
+		return
 	}
 	u.transport.MaxIdleConnsPerHost = 15
 	return u
@@ -91,9 +107,6 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	}
 	before := time.Now()
 	req.Header.Set("Connection", "Keep-Alive")
-	if u.tcpconn != nil {
-		u.tcpconn.SetDeadline(time.Now().Add(u.Timeout))
-	}
 	var upstrRes *http.Response
 	upstrRes, err = u.transport.RoundTrip(req)
 	diff := falcore.TimeDiff(before, time.Now())
@@ -158,9 +171,6 @@ func (u *Upstream) ping() (up bool, ok bool) {
 		if err != nil {
 			falcore.Error("Bad Ping request: %v", err)
 			return false, true
-		}
-		if u.tcpconn != nil {
-			u.tcpconn.SetDeadline(time.Now().Add(u.Timeout))
 		}
 		res, err := u.transport.RoundTrip(request)
 
