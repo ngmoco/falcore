@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
+	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -44,6 +47,7 @@ func main() {
 
 	// start the server
 	// this is normally blocking forever unless you send lifecycle commands 
+	fmt.Printf("%v Starting Listener on 8090\n", pid)
 	if err := srv.ListenAndServe(); err != nil {
 		fmt.Printf("%v Could not start server: %v", pid, err)
 	}
@@ -65,13 +69,49 @@ func childReady(srv *falcore.Server) {
 // setup and fork/exec myself. Make sure to keep open important FD's that won't get re-created by the child
 // specifically, std* and your listen socket
 func forker(srv *falcore.Server) (pid int, err error) {
-	fmt.Printf("Forking now with socket: %v\n", srv.SocketFd())
+	var socket string
+	// At version 1.0.3 the socket FD behavior changed and the fork socket is always 3
+	// 0 = stdin, 1 = stdout, 2 = stderr, 3 = acceptor socket
+	// This is because the ForkExec dups all the saved FDs down to
+	// start at 0.  This is also why you MUST include 0,1,2 in the
+	// attr.Files
+	if goVersion103OrAbove() {
+		socket = "3"
+	} else {
+		socket = fmt.Sprintf("%v", srv.SocketFd())
+	}
+	fmt.Printf("Forking now with socket: %v\n", socket)
 	mypath := os.Args[0]
-	args := []string{mypath, "-socket", fmt.Sprintf("%v", srv.SocketFd())}
+	args := []string{mypath, "-socket", socket}
 	attr := new(syscall.ProcAttr)
 	attr.Files = append([]uintptr(nil), 0, 1, 2, uintptr(srv.SocketFd()))
 	pid, err = syscall.ForkExec(mypath, args, attr)
 	return
+}
+
+func goVersion103OrAbove() bool {
+	ver := strings.Split(runtime.Version(), ".")
+	// Go versioning is weird so this only works for common go1 cases:
+	// current as of patch:
+	// go1.0.3                        13678:2d8bc3c94ecb : true
+	// go1.0.2                        13278:5e806355a9e1 : false
+	// go1.0.1                        12994:2ccfd4b451d3 : false
+	// go1                            12872:920e9d1ffd1f : false
+	// go1.1+/go2+ : true
+	// release* : true (this is possibly broken)
+	// weekly* : true (this is possibly broken)
+	// tip : true
+	if len(ver) > 0 && strings.Index(ver[0], "go") == 0 {
+		if ver[0] == "go1" && len(ver) == 1 {
+			// just go1
+			return false
+		} else if ver[0] == "go1" && len(ver) == 3 && ver[1] == "0" {
+			if patchVer, _ := strconv.ParseInt(ver[2], 10, 64); patchVer < 3 {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // Handle lifecycle events
