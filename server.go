@@ -246,6 +246,12 @@ func (srv *Server) handler(c net.Conn) {
 				res.TransferEncoding = []string{"chunked"}
 			}
 
+			// For HTTP/1.0 and Keep-Alive, sending the Connection: Keep-Alive response header is required
+			// because close is default (opposite of 1.1)
+			if keepAlive && !req.ProtoAtLeast(1, 1) {
+				res.Header.Add("Connection", "Keep-Alive")
+			}
+
 			// write response
 			if srv.sendfile {
 				res.Write(c)
