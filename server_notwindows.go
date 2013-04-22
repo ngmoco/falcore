@@ -38,6 +38,7 @@ func (srv *Server) cycleNonBlock(c net.Conn) {
 				c.Write([]byte{})
 				// Re-enable TCP_CORK/TCP_NOPUSH
 				syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, srv.sockOpt, 1)
+				syscall.SetNonblock(fd, true)
 			}
 		}
 	}
