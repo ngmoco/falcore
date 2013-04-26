@@ -69,6 +69,15 @@ func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Requ
 	fReq.ID = fmt.Sprintf("%010x", (ut-(ut-(ut%1e12)))+int64(rand.Intn(999)))
 	fReq.PipelineStageStats = list.New()
 	fReq.pipelineHash = crc32.NewIEEE()
+
+	// Support for 100-continue requests
+	// http.Server (and presumably google app engine) already handle this
+	// case.  So we don't need to do anything if we don't own the
+	// connection.
+	if conn != nil && request.Header.Get("Expect") == "100-continue" {
+		request.Body = &continueReader{req: fReq, r: request.Body}
+	}
+
 	return fReq
 }
 
