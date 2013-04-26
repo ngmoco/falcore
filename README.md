@@ -1,3 +1,9 @@
+# Falcore has Moved
+
+[Fitstar Falcore &raquo;](https://github.com/fitstar/falcore)
+
+The Fitstar fork has tons of updates that break backwards compatibility so we are leaving this repo live for reference of the older interfaces.  It will no longer be maintained here, though so you should upgrade to the Fitstar fork.
+
 # Falcore
 
 Falcore is a framework for constructing high performance, modular HTTP servers in Golang.
